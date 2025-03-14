@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import Cestrum
+@testable import CestrumKit
 
 struct GraphTests {
     func constructTypicalGraph() -> DependencyGraph {
