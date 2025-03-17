@@ -13,7 +13,7 @@ public struct CESPInterpreter {
     public static func interpret(code: String) -> (graphName: String, abstractPlan: AbstractPlan) {
         let lexer = CESPLexer(input: code)
         var tokens = try! lexer.tokenise()
-        tokens = tokens.filter { $0.kind.isDisposable }
+        tokens = tokens.filter { !$0.kind.isDisposable }
         let analyser = CESPAnalyser(tokens: tokens)
         analyser.analyse()
         let translator = CESPTranslator(tokens: tokens)

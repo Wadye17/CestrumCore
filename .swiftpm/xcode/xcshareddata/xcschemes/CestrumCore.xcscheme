@@ -15,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "Cestrum"
-               BuildableName = "Cestrum"
-               BlueprintName = "Cestrum"
+               BlueprintIdentifier = "CestrumCore"
+               BuildableName = "CestrumCore"
+               BlueprintName = "CestrumCore"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -34,9 +34,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CestrumTests"
-               BuildableName = "CestrumTests"
-               BlueprintName = "CestrumTests"
+               BlueprintIdentifier = "CestrumCoreTests"
+               BuildableName = "CestrumCoreTests"
+               BlueprintName = "CestrumCoreTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -62,9 +62,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "Cestrum"
-            BuildableName = "Cestrum"
-            BlueprintName = "Cestrum"
+            BlueprintIdentifier = "CestrumCore"
+            BuildableName = "CestrumCore"
+            BlueprintName = "CestrumCore"
             ReferencedContainer = "container:">
          </BuildableReference>
       </MacroExpansion>

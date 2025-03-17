@@ -14,7 +14,7 @@ struct CESPTranslator {
         self.tokens = tokens
     }
     
-    // IMPORTANT: the translator works naively; assuming the analysis was successful and the tokens are coherent (at least for now).
+    // IMPORTANT: Currently, the translator works naively; assuming the analysis was successful and the tokens are coherent (at least for now).
     func translate() -> (graphName: String, abstractPlan: AbstractPlan) {
         var graphName: String?
         var abstractPlan = AbstractPlan()
