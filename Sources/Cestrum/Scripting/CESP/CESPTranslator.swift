@@ -20,13 +20,9 @@ struct CESPTranslator {
         var abstractPlan = AbstractPlan()
         let instructions = sliceTokens(self.tokens)
         for instruction in instructions {
-            print("Entering instructions loop...")
-            print(instruction)
             switch instruction[0].kind {
             case .keyword(.hook):
-                print("Entering hook instruction...")
                 graphName = instruction[1].value
-                print("Done with hook instruction.")
             case .keyword(.add):
                 let newDeployment = Deployment(instruction[1].value)
                 // dont forget the YAML
