@@ -56,12 +56,12 @@ public final class DependencyGraph: DeepCopyable {
     }
     
     /// Returns the set of deployments with the given status.
-    subscript(_ status: Status) -> Set<Deployment> {
+    public subscript(_ status: Status) -> Set<Deployment> {
         return self.nodes.filter { $0.status == status }
     }
     
     /// Returns `true` if the given deployment exists in this graph.
-    func contains(_ deployment: Deployment) -> Bool {
+    public func contains(_ deployment: Deployment) -> Bool {
         return self.nodes.contains(deployment)
     }
     
@@ -70,7 +70,7 @@ public final class DependencyGraph: DeepCopyable {
     /// Use only when finding the deployment is critical.
     /// For a safe retrieval, use either subscripts.
     @discardableResult
-    func checkPresence(of d: Deployment) -> Deployment {
+    public func checkPresence(of d: Deployment) -> Deployment {
         guard let deployment = self[d] else {
             fatalError("Fatal error: Deployment \(d) does not exist in graph \(self.namespace).")
         }
@@ -78,19 +78,19 @@ public final class DependencyGraph: DeepCopyable {
     }
     
     /// Returns the set of deployments that the given deployment requires (i.e., depends on).
-    func getRequirements(of deployment: Deployment) -> Set<Deployment> {
+    public func getRequirements(of deployment: Deployment) -> Set<Deployment> {
         let actualDeployment = self.checkPresence(of: deployment)
         return Set(self.arcs.filter({ $0.source == actualDeployment }).map(\.target))
     }
     
     /// Returns the set of deployments that require (i.e., depend on) the given deployment.
-    func getRequirers(of deployment: Deployment) -> Set<Deployment> {
+    public func getRequirers(of deployment: Deployment) -> Set<Deployment> {
         let actualDeployment = self.checkPresence(of: deployment)
         return Set(self.arcs.filter({ $0.target == actualDeployment }).map(\.source))
     }
     
     /// Adds the given deployment to the graph and handles its dependencies.
-    func add<C: Sequence>(_ deployment: Deployment, requirements: C, applied: Bool = true) where C.Element == Deployment {
+    public func add<C: Sequence>(_ deployment: Deployment, requirements: C, applied: Bool = true) where C.Element == Deployment {
         if !self.nodes.insert(deployment).inserted {
             print("Warning: Deployment \(deployment) already exists in graph \(self.namespace).")
         }
@@ -101,14 +101,14 @@ public final class DependencyGraph: DeepCopyable {
         if applied { print("added \(deployment)")}
     }
     
-    func add(_ dependency: Dependency) {
+    public func add(_ dependency: Dependency) {
         self.checkPresence(of: dependency.source)
         self.checkPresence(of: dependency.target)
         self.arcs.insert(dependency)
     }
     
     /// Removes the given deployment from the graph and automatically handles the dependencies.
-    func remove(_ deployment: Deployment, applied: Bool = true) {
+    public func remove(_ deployment: Deployment, applied: Bool = true) {
         self.checkPresence(of: deployment)
         self.arcs.subtract(Set(self.arcs.filter { $0.contains(deployment) }))
         self.nodes.remove(deployment)
@@ -123,7 +123,7 @@ public final class DependencyGraph: DeepCopyable {
         }
     }
     
-    func generatePlans(from abstractPlan: AbstractPlan) -> (abstract: AbstractPlan, intermediate: IntermediatePlan, concrete: ConcretePlan) {
+    public func generatePlans(from abstractPlan: AbstractPlan) -> (abstract: AbstractPlan, intermediate: IntermediatePlan, concrete: ConcretePlan) {
         let graphCopy = self.createCopy()
         var intermediatePlan = IntermediatePlan()
         for abstractCommand in abstractPlan.lines {
