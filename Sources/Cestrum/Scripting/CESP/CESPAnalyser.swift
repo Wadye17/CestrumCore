@@ -33,7 +33,7 @@ struct CESPAnalyser {
             switch token.kind {
             case .identifier:
                 guard token.value.isValidVariableName else {
-                    print("\(token.line) Error: Invalid identifier")
+                    fatalError("\(token.line) Error: Invalid identifier")
                     return
                 }
                 
@@ -42,14 +42,14 @@ struct CESPAnalyser {
             }
             
             if token.kind == .unknown {
-                print("\(token.line) Error: Unknown symbol")
+                fatalError("\(token.line) Error: Unknown symbol")
             }
             
             let nextToken = tokens[index + 1]
             
             if let nextExpectedTokens = token.nextFlexibleExpectations(during: step) {
                 if !nextExpectedTokens.contains(nextToken.kind) {
-                    print("\(token.line) Error: Expected \(nextExpectedTokens) after \(token) but found \(nextToken)")
+                    fatalError("\(token.line) Error: Expected \(nextExpectedTokens) after \(token) but found \(nextToken)")
                     return
                 }
             } else {
