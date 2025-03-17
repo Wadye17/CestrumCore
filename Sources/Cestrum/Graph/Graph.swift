@@ -1,6 +1,6 @@
 //
 //  Graph.swift
-//  CestrumKit
+//  Cestrum
 //
 //  Created by Wadÿe on 11/03/2025.
 //
@@ -29,7 +29,7 @@ public final class DependencyGraph: DeepCopyable {
         case namespace, nodes, arcs
     }
     
-    /// Custom decoding to ensure dependencies reference the correct `Deployment` instances.
+    /// Custom decoding to ensure the dependencies' elements reference the correct `Deployment` instances.
     required public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.namespace = try container.decode(String.self, forKey: .namespace)

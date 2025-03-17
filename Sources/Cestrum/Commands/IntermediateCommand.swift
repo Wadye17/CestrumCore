@@ -1,6 +1,6 @@
 //
 //  IntermediateCommand.swift
-//  CestrumKit
+//  Cestrum
 //
 //  Created by Wadÿe on 11/03/2025.
 //

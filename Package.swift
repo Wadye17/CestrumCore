@@ -4,21 +4,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "CestrumKit",
+    name: "Cestrum",
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "CestrumKit",
-            targets: ["CestrumKit"]),
+            name: "Cestrum",
+            targets: ["Cestrum"]),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "CestrumKit"),
+            name: "Cestrum"),
         .testTarget(
-            name: "CestrumKitTests",
-            dependencies: ["CestrumKit"]
+            name: "CestrumTests",
+            dependencies: ["Cestrum"]
         ),
     ]
 )

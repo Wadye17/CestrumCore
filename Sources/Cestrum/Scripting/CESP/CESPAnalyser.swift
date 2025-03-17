@@ -1,6 +1,6 @@
 //
 //  CESPAnalyser.swift
-//  CestrumKit
+//  Cestrum
 //
 //  Created by Wadÿe on 13/03/2025.
 //
