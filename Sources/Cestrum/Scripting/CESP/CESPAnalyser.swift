@@ -18,12 +18,12 @@ struct CESPAnalyser {
         var step = CESPLexer.Phase.hooking
         
         guard !tokens.isEmpty else {
-            print("Error: Empty input")
+            fatalError("Error: Empty input")
             return
         }
         
         if tokens.first!.kind != .keyword(.hook) {
-            print("Error: Expected hook")
+            fatalError("Error: Expected hook")
         }
         
         for (index, token) in tokens.enumerated() {
@@ -61,7 +61,7 @@ struct CESPAnalyser {
             step.update(for: nextToken)
         }
         
-        print("Analysis passed!")
+        // print("Analysis passed!")
         return
     }
 }
