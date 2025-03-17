@@ -26,8 +26,4 @@ extension Plan {
         self.lines.append(contentsOf: lines)
         return self
     }
-    
-    public var description: String {
-        self.lines.map({ $0.description }).joined(separator: "\n")
-    }
 }

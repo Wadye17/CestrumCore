@@ -15,4 +15,8 @@ public struct IntermediatePlan: Plan {
     init() {
         self.lines = []
     }
+    
+    public var description: String {
+        self.lines.map({ $0.description }).joined(separator: "\n")
+    }
 }

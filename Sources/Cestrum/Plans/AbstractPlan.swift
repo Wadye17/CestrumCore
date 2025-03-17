@@ -30,6 +30,10 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
     public static func generate(from code: String) -> (graphName: String, abstractPlan: AbstractPlan) {
         return CESPInterpreter.interpret(code: code)
     }
+    
+    public var description: String {
+        self.lines.map({ $0.description }).joined(separator: "\n")
+    }
 }
 
 @resultBuilder

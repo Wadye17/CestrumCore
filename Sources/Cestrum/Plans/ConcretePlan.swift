@@ -40,4 +40,8 @@ public final class ConcretePlan: Plan {
         graph.nodes = targetGraph.nodes
         graph.arcs = targetGraph.arcs
     }
+    
+    public var description: String {
+        self.lines.map({ $0.description }).joined(separator: "\n")
+    }
 }
