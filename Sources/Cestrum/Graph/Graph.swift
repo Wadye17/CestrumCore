@@ -34,14 +34,15 @@ public final class DependencyGraph: DeepCopyable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.namespace = try container.decode(String.self, forKey: .namespace)
         self.nodes = try container.decode(Set<Deployment>.self, forKey: .nodes)
-        let decodedArcs = try container.decode(Set<Dependency>.self, forKey: .arcs)
-        
-        let deploymentMap = Dictionary(uniqueKeysWithValues: nodes.map { ($0, $0) })
-        
-        self.arcs = Set(decodedArcs.map { dependency in
-            let fixedSource = deploymentMap[dependency.source] ?? dependency.source
-            let fixedTarget = deploymentMap[dependency.target] ?? dependency.target
-            return Dependency(source: fixedSource, target: fixedTarget)
+
+        let deploymentMap = Dictionary(uniqueKeysWithValues: nodes.map { ($0.name, $0) })
+        let decodedArcs = try container.decode([[String: String]].self, forKey: .arcs)
+
+        self.arcs = Set(decodedArcs.compactMap { dict in
+            guard let sourceName = dict["source"], let targetName = dict["target"],
+                  let sourceDeployment = deploymentMap[sourceName],
+                  let targetDeployment = deploymentMap[targetName] else { return nil }
+            return Dependency(source: sourceDeployment, target: targetDeployment)
         })
     }
     

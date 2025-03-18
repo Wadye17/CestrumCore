@@ -29,6 +29,16 @@ public struct Dependency: Hashable, Codable {
     public func contains(_ deployment: Deployment) -> Bool {
         source == deployment || target == deployment
     }
+    
+    private enum CodingKeys: String, CodingKey {
+        case source, target
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(source.name, forKey: .source)
+        try container.encode(target.name, forKey: .target)
+    }
 }
 
 /// A custom operator that allows to express a source-target dependency between two deployments.

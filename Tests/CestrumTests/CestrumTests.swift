@@ -6,6 +6,7 @@
 //
 
 import Testing
+import Foundation
 @testable import CestrumCore
 
 struct GraphTests {
@@ -94,10 +95,12 @@ struct GraphTests {
         
         let plan: AbstractPlan = [
             .add(e, requirements: [a]),
-            .add(f, requirements: [a, b]),
             .remove(c),
+            .add(f, requirements: [a, b]),
             .replace(oldDeployment: d, newDeployment: newD)
         ]
+        
+        print(String(data: try! JSONEncoder.default.encode(graph.createCopy()), encoding: .utf8)!)
         
         let (abstractPlan, intermediatePlan, concretePlan) = graph.generatePlans(from: plan)
         
