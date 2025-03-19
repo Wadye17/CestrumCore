@@ -29,6 +29,23 @@ public enum AbstractCommand: TranslatableCommand {
         }
     }
     
+    public func reflect(considering graph: DependencyGraph) {
+        switch self {
+        case .add(let deployment, let requirements):
+            graph.add(deployment, requirements: requirements, applied: false)
+        case .remove(let deployment):
+            graph.remove(deployment, applied: false)
+        case .replace(let oldDeployment, let newDeployment):
+            let actualOldDeployment = graph.checkPresence(of: oldDeployment)
+            let archivedDeployment = ArchivedDeployment(for: actualOldDeployment, in: graph)
+            graph.remove(actualOldDeployment, applied: false)
+            graph.add(newDeployment, requirements: archivedDeployment.requirements, applied: false)
+            for requirer in archivedDeployment.requirers {
+                graph.add(requirer --> newDeployment)
+            }
+        }
+    }
+    
     public var description: String {
         switch self {
         case .add(let deployment, let requirements):

@@ -12,12 +12,16 @@ import AppKit
 #endif
 
 /// Runs the given command.
-public func runCommand(_ command: String) {
+public func runCommand(
+    _ command: String,
+    stdout: FileHandle = .standardOutput,
+    stderr: FileHandle = .standardError
+) {
     let process = Process()
     process.launchPath = "/bin/sh"
     process.arguments = ["-c", command]
-    process.standardOutput = FileHandle.standardOutput
-    process.standardError = FileHandle.standardError
+    process.standardOutput = stdout
+    process.standardError = stderr
     process.launch()
     process.waitUntilExit()
 }

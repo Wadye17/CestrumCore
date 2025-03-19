@@ -12,14 +12,69 @@ public final class ConcretePlan: Plan {
     
     public internal(set) var lines: [AtomicCommand]
     let initialGraph: DependencyGraph
-    var targetGraph: DependencyGraph? = nil
+    var targetGraph: DependencyGraph
     
-    init(initialGraph: DependencyGraph) {
+    init(from initialGraph: DependencyGraph, to targetGraph: DependencyGraph) {
         self.lines = []
-        self.initialGraph = initialGraph
+        self.initialGraph = initialGraph.createCopy() // stores only a copy of the initial graph, not the graph itself.
+        self.targetGraph = targetGraph
+        self.synchronise()
     }
     
-    /// Applies the given instruction
+    internal func synchronise() {
+        let intermediateGraph = initialGraph.createCopy()
+        
+        var stopActions: Array<AtomicCommand> = []
+        var removeActions: Set<AtomicCommand> = []
+        var addActions: Set<AtomicCommand> = []
+        var startActions: Array<AtomicCommand> = []
+        
+        // deployments present in the initial graph, but missing in the target graph.
+        let deploymentsToRemove = intermediateGraph.nodes.subtracting(targetGraph.nodes)
+        
+        // perform removal operations first (AFTER stopping the necessary deployments)
+        for deployment in deploymentsToRemove {
+            let actualDeployment = intermediateGraph.checkPresence(of: deployment)
+            actualDeployment.stop(considering: intermediateGraph, atomicPlan: &stopActions)
+            intermediateGraph.remove(actualDeployment, applied: false)
+            removeActions.insert(.remove(actualDeployment, intermediateGraph))
+        }
+        self.lines.append(contentsOf: stopActions)
+        self.lines.append(contentsOf: removeActions)
+        
+        // deployments present in the target graph but missing from the initial graph.
+        let deploymentsToAdd = targetGraph.nodes.subtracting(initialGraph.nodes)
+        
+        // perform addition operations, then starting operations
+        for deployment in deploymentsToAdd {
+            intermediateGraph.add(deployment, requirements: [], applied: false)
+            addActions.insert(.add(deployment, intermediateGraph))
+        }
+        
+        // startup operations
+        for deployment in deploymentsToAdd {
+            let actualDeployment = intermediateGraph.checkPresence(of: deployment)
+            let requirements = targetGraph.getRequirements(of: actualDeployment)
+            for requirement in requirements {
+                let actualRequirement = intermediateGraph.checkPresence(of: requirement)
+                intermediateGraph.add(actualDeployment --> actualRequirement)
+            }
+            actualDeployment.start(considering: intermediateGraph, atomicPlan: &startActions)
+        }
+        
+        self.lines.append(contentsOf: addActions)
+        self.lines.append(contentsOf: startActions)
+    }
+    
+    public var kubernetesEquivalent: [String] {
+        var result = [String]()
+        for line in lines {
+            let lineKubernetesEquivalent = line.kubernetesEquivalent
+            result.append(contentsOf: lineKubernetesEquivalent)
+        }
+        return result
+    }
+    
     public func apply(on graph: DependencyGraph, onKubernetes: Bool = true) {
         if onKubernetes {
             for line in lines {
@@ -31,10 +86,6 @@ public final class ConcretePlan: Plan {
                     do { sleep(5) }
                 }
             }
-        }
-        
-        guard let targetGraph else {
-            fatalError("Cannot apply plan because no target graph was set; this should not happen.")
         }
         
         graph.nodes = targetGraph.nodes

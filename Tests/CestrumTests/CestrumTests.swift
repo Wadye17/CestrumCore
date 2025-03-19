@@ -63,13 +63,10 @@ struct GraphTests {
             .add("F", requirements: ["A"])
         ]
         
-        let (abstractPlan, intermediatePlan, concretePlan) = graph.generatePlans(from: plan)
+        let concretePlan = graph.generatePlan(from: plan)
         
         print("\nABSTRACT")
-        print(abstractPlan)
-        
-        print("\nINTERMEDIATE")
-        print(intermediatePlan)
+        print(plan)
         
         print("\nCONCRETE")
         print(concretePlan)
@@ -83,12 +80,16 @@ struct GraphTests {
         let d = Deployment("D")
         let e = Deployment("E")
         let f = Deployment("F")
-        // let g = Deployment("G")
+        let g = Deployment("G")
+        let h = Deployment("H")
+        let i = Deployment("I")
         let newD = Deployment("D'")
         
-        let graph = DependencyGraph(name: "Example", deployments: [a, b, c, d]) {
+        let graph = DependencyGraph(name: "Example", deployments: [a, b, c, d, g, h, i]) {
             a --> [c, d]
             b --> d
+            g --> h
+            h --> i
         }
         
         print(graph)
@@ -100,21 +101,11 @@ struct GraphTests {
             .replace(oldDeployment: d, newDeployment: newD)
         ]
         
-        print(String(data: try! JSONEncoder.default.encode(graph.createCopy()), encoding: .utf8)!)
+//        print(String(data: try! JSONEncoder.default.encode(graph.createCopy()), encoding: .utf8)!)
         
-        let (abstractPlan, intermediatePlan, concretePlan) = graph.generatePlans(from: plan)
-        
-        print("\nABSTRACT")
-        print(abstractPlan)
-        
-        print("\nINTERMEDIATE")
-        print(intermediatePlan)
-        
-        print("\nCONCRETE")
-        print(concretePlan)
-        
-        print("\nNEW GRAPH AFTER APPLICATION")
+        let concretePlan = graph.generatePlan(from: plan)
         concretePlan.apply(on: graph, onKubernetes: false)
+        print(concretePlan)
         print(graph)
     }
     
@@ -122,7 +113,7 @@ struct GraphTests {
     func testCESP() {
         let code =
         """
-        hook "G";
+        hook "Typical_Graph";
         add Z "z.yaml" requiring {A, B};
         remove C;
         replace D with ND "ND.yaml";
@@ -140,6 +131,11 @@ struct GraphTests {
         print(">>>>>>>>>>>")
         print(abstractPlan)
         print(">>>>>>>>>>>")
-        print(constructTypicalGraph().generatePlans(from: abstractPlan).concrete)
+        let graph = constructTypicalGraph()
+        print(graph)
+        let concretePlan = graph.generatePlan(from: abstractPlan)
+        print(concretePlan)
+        concretePlan.apply(on: graph, onKubernetes: false)
+        print(graph)
     }
 }

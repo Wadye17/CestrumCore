@@ -124,20 +124,10 @@ public final class DependencyGraph: DeepCopyable {
         }
     }
     
-    public func generatePlans(from abstractPlan: AbstractPlan) -> (abstract: AbstractPlan, intermediate: IntermediatePlan, concrete: ConcretePlan) {
-        let graphCopy = self.createCopy()
-        var intermediatePlan = IntermediatePlan()
-        for abstractCommand in abstractPlan.lines {
-            let intermediateCommand = abstractCommand.translate(considering: graphCopy)
-            intermediatePlan.add(intermediateCommand)
-        }
-        var concretePlan = ConcretePlan(initialGraph: self)
-        for intermediateCommand in intermediatePlan.lines {
-            let atomicCommand = intermediateCommand.translate(considering: graphCopy)
-            concretePlan.add(atomicCommand)
-        }
-        concretePlan.targetGraph = graphCopy
-        return (abstractPlan, intermediatePlan, concretePlan)
+    public func generatePlan(from abstractPlan: AbstractPlan) -> ConcretePlan {
+        let targetGraph = abstractPlan.createTarget(on: self)
+        let concretePlan = ConcretePlan(from: self, to: targetGraph)
+        return concretePlan
     }
 }
 
@@ -145,11 +135,25 @@ extension DependencyGraph: CustomStringConvertible {
     public var description: String {
         """
         graph \(self.namespace) {
-            nodes {\(self.nodes.map(\.description).sorted().joined(separator: ", "))}
+            nodes {\(self.nodes.map(\.fullDescription).sorted().joined(separator: ", "))}
             dependencies {
             \t\(self.arcs.map(\.description).sorted().joined(separator: "\n\t\t"))
             }
         }
         """
+    }
+}
+
+extension DependencyGraph: Hashable {
+    public static func == (_ lhs: DependencyGraph, _ rhs: DependencyGraph) -> Bool {
+        lhs.namespace == rhs.namespace
+        && lhs.nodes == rhs.nodes
+        && lhs.arcs == rhs.arcs
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.namespace)
+        hasher.combine(self.nodes)
+        hasher.combine(self.arcs)
     }
 }

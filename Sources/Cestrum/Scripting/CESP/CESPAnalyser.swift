@@ -19,7 +19,6 @@ struct CESPAnalyser {
         
         guard !tokens.isEmpty else {
             fatalError("Error: Empty input")
-            return
         }
         
         if tokens.first!.kind != .keyword(.hook) {
@@ -34,7 +33,6 @@ struct CESPAnalyser {
             case .identifier:
                 guard token.value.isValidVariableName else {
                     fatalError("\(token.line) Error: Invalid identifier")
-                    return
                 }
                 
             default:
@@ -50,7 +48,6 @@ struct CESPAnalyser {
             if let nextExpectedTokens = token.nextFlexibleExpectations(during: step) {
                 if !nextExpectedTokens.contains(nextToken.kind) {
                     fatalError("\(token.line) Error: Expected \(nextExpectedTokens) after \(token) but found \(nextToken)")
-                    return
                 }
             } else {
                 if nextToken == .end {

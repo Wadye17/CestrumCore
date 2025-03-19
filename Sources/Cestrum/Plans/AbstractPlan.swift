@@ -27,6 +27,14 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
         self.lines = elements
     }
     
+    func createTarget(on graph: DependencyGraph) -> DependencyGraph {
+        let targetGraph = graph.createCopy()
+        for line in lines {
+            line.reflect(considering: targetGraph)
+        }
+        return targetGraph
+    }
+    
     public static func generate(from code: String) -> (graphName: String, abstractPlan: AbstractPlan) {
         return CESPInterpreter.interpret(code: code)
     }

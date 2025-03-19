@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an instruction that can be run.
-public enum AtomicCommand: Command {
+public enum AtomicCommand: Command, Hashable {
     case add(Deployment, DependencyGraph)
     case remove(Deployment, DependencyGraph)
     case start(Deployment, DependencyGraph)
