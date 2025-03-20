@@ -136,6 +136,8 @@ struct GraphTests {
         print(graph)
         let concretePlan = graph.generatePlan(from: abstractPlan)
         print(concretePlan)
+        print("KUBERNETES EQUIVALENT:")
+        print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
         concretePlan.apply(on: graph, onKubernetes: false)
         print(graph)
     }
