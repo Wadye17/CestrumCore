@@ -135,7 +135,7 @@ extension DependencyGraph: CustomStringConvertible {
     public var description: String {
         """
         graph \(self.namespace) {
-            nodes {\(self.nodes.map(\.description).sorted().joined(separator: ", "))}
+            deployments {\(self.nodes.map(\.description).sorted().joined(separator: ", "))}
             dependencies {
             \t\(self.arcs.map(\.description).sorted().joined(separator: "\n\t\t"))
             }
