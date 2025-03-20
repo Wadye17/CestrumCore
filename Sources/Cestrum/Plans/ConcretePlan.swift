@@ -89,7 +89,7 @@ public final class ConcretePlan: Plan {
             for line in lines {
                 for command in line.kubernetesEquivalent {
                     runCommand(command)
-                    do { sleep(3) }
+                    do { sleep(timeInterval) }
                 }
             }
         }
