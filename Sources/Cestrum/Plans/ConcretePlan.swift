@@ -84,7 +84,7 @@ public final class ConcretePlan: Plan {
         return result
     }
     
-    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true) {
+    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true, stdout: FileHandle = .standardOutput, stderr: FileHandle = .standardError) {
         if onKubernetes {
             for line in lines {
                 for command in line.kubernetesEquivalent {
