@@ -59,6 +59,6 @@ public func --> (_ source: Deployment, _ targets: [Deployment]) -> Set<Dependenc
 
 extension Dependency: CustomStringConvertible {
     public var description: String {
-        "(\(source.fullDescription) --> \(target.fullDescription))"
+        "(\(source) --> \(target))"
     }
 }
