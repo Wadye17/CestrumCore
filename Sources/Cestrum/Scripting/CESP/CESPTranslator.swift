@@ -24,18 +24,20 @@ struct CESPTranslator {
             case .keyword(.hook):
                 graphName = instruction[1].value
             case .keyword(.add):
-                let newDeployment = Deployment(instruction[1].value)
-                // dont forget the YAML
+                let newDeploymentName = instruction[1].value
                 let manifestFilePath = instruction[2].value
+                let newDeployment = Deployment(newDeploymentName, manifestFilePath)
                 let requirements = extractRequirements(from: instruction)
                 abstractPlan.add(.add(newDeployment, requirements: Set(requirements.map({ Deployment($0) }))))
             case .keyword(.remove):
-                let deploymentToRemove = Deployment(instruction[1].value)
+                let deploymentToRemoveName = instruction[1].value
+                let deploymentToRemove = Deployment(deploymentToRemoveName)
                 abstractPlan.add(.remove(deploymentToRemove))
             case .keyword(.replace):
                 let oldDeployment = Deployment(instruction[1].value)
-                let newDeployment = Deployment(instruction[3].value)
+                let newDeploymentName = instruction[3].value
                 let manifestFilePath = instruction[4].value
+                let newDeployment = Deployment(newDeploymentName, manifestFilePath)
                 abstractPlan.add(.replace(oldDeployment: oldDeployment, newDeployment: newDeployment))
             default:
                 fatalError("Unsupported keyword.")

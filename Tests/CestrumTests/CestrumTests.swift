@@ -106,6 +106,7 @@ struct GraphTests {
         let concretePlan = graph.generatePlan(from: plan)
         concretePlan.apply(on: graph, onKubernetes: false)
         print(concretePlan)
+        print(concretePlan.kubernetesEquivalent)
         print(graph)
     }
     

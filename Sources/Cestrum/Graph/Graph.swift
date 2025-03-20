@@ -75,6 +75,9 @@ public final class DependencyGraph: DeepCopyable {
         guard let deployment = self[d] else {
             fatalError("Fatal error: Deployment \(d) does not exist in graph \(self.namespace).")
         }
+        if let manifest = d.manifest {
+            deployment.manifest = manifest
+        }
         return deployment
     }
     

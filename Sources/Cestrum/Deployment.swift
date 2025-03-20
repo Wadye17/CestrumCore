@@ -11,19 +11,21 @@ import Foundation
 public final class Deployment: Codable {
     /// The name of the deployment as in Kubernetes.
     public let name: String
+    public internal(set) var manifest: String?
     
     /// The theoretical status of the deployment.
     public private(set) var status: Status
     
     /// Creates a new instance of a deployment.
-    init(_ name: String, _ status: Status) {
+    init(_ name: String, _ status: Status, _ manifest: String? = nil) {
         self.name = name
         self.status = status
+        self.manifest = nil
     }
     
     /// Creates a new, uninitialised instance of a deployment.
-    convenience init(_ name: String) {
-        self.init(name, .stopped)
+    convenience init(_ name: String, _ manifest: String? = nil) {
+        self.init(name, .stopped, manifest)
     }
     
     /// Marks the deployment as started.
