@@ -84,15 +84,12 @@ public final class ConcretePlan: Plan {
         return result
     }
     
-    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true, stdout: FileHandle = .standardOutput, stderr: FileHandle = .standardError) {
+    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError, timeInterval: UInt32 = 3) {
         if onKubernetes {
             for line in lines {
                 for command in line.kubernetesEquivalent {
                     runCommand(command)
-                }
-                if case AtomicCommand.stop(_, _) = line {
-                    // breathe a bit after a stop command (for observability)
-                    do { sleep(5) }
+                    do { sleep(3) }
                 }
             }
         }
