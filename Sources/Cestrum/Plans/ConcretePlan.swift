@@ -45,21 +45,30 @@ public final class ConcretePlan: Plan {
         // deployments present in the target graph but missing from the initial graph.
         let deploymentsToAdd = targetGraph.nodes.subtracting(initialGraph.nodes)
         
-        // perform addition operations, then starting operations
+        // perform addition operations
         for deployment in deploymentsToAdd {
             intermediateGraph.add(deployment, requirements: [], applied: false)
             addActions.insert(.add(deployment, intermediateGraph))
         }
         
-        // startup operations
+        // syncing dependencies
         for deployment in deploymentsToAdd {
             let actualDeployment = intermediateGraph.checkPresence(of: deployment)
-            let requirements = targetGraph.getRequirements(of: actualDeployment)
+            let requirements = targetGraph.getRequirements(of: deployment)
+            let requirers = targetGraph.getRequirers(of: deployment)
             for requirement in requirements {
                 let actualRequirement = intermediateGraph.checkPresence(of: requirement)
                 intermediateGraph.add(actualDeployment --> actualRequirement)
             }
-            actualDeployment.start(considering: intermediateGraph, atomicPlan: &startActions)
+            for requirer in requirers {
+                let actualRequirer = intermediateGraph.checkPresence(of: requirer)
+                intermediateGraph.add(actualRequirer --> actualDeployment)
+            }
+        }
+        
+        // startup operations of those left unstarted (those who no longer depend on others.)
+        for deployment in intermediateGraph.nodes where deployment.status == .stopped {
+            deployment.start(considering: intermediateGraph, atomicPlan: &startActions)
         }
         
         self.lines.append(contentsOf: addActions)
