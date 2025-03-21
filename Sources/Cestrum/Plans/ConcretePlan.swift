@@ -91,6 +91,7 @@ public final class ConcretePlan: Plan {
                     runCommand(command)
                     do { sleep(timeInterval) }
                 }
+                print("[Cestrum]: \(line.doneString)")
             }
         }
         
