@@ -33,6 +33,19 @@ public enum AtomicCommand: Command, Hashable {
         }
     }
     
+    var doneString: String {
+        switch self {
+        case .add(let deployment, _):
+            "added \(deployment)"
+        case .remove(let deployment, _):
+            "removed \(deployment)"
+        case .start(let deployment, _):
+            "started \(deployment)"
+        case .stop(let deployment, _):
+            "stopped \(deployment)"
+        }
+    }
+    
     public var description: String {
         switch self {
         case .add(let deployment, _):

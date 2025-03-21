@@ -14,8 +14,8 @@ import AppKit
 /// Runs the given command.
 public func runCommand(
     _ command: String,
-    stdout: FileHandle = .standardOutput,
-    stderr: FileHandle = .standardError
+    stdout: FileHandle? = .standardOutput,
+    stderr: FileHandle? = .standardError
 ) {
     let process = Process()
     process.launchPath = "/bin/sh"
