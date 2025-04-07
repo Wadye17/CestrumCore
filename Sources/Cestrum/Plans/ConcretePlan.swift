@@ -30,32 +30,32 @@ public final class ConcretePlan: Plan {
         var startActions: Array<AtomicCommand> = []
         
         // deployments present in the initial graph, but missing in the target graph.
-        let deploymentsToRemove = intermediateGraph.nodes.subtracting(targetGraph.nodes)
+        let deploymentsToRemove = intermediateGraph.deployments.subtracting(targetGraph.deployments)
         
         // perform removal operations first (AFTER stopping the necessary deployments)
         for deployment in deploymentsToRemove {
             let actualDeployment = intermediateGraph.checkPresence(of: deployment)
             actualDeployment.stop(considering: intermediateGraph, atomicPlan: &stopActions)
-            intermediateGraph.remove(actualDeployment, applied: false)
+            intermediateGraph.removeDeployment(actualDeployment, applied: false)
             removeActions.insert(.remove(actualDeployment, intermediateGraph))
         }
         self.lines.append(contentsOf: stopActions)
         self.lines.append(contentsOf: removeActions)
         
         // deployments present in the target graph but missing from the initial graph.
-        let deploymentsToAdd = targetGraph.nodes.subtracting(initialGraph.nodes)
+        let deploymentsToAdd = targetGraph.deployments.subtracting(initialGraph.deployments)
         
         // perform addition operations
         for deployment in deploymentsToAdd {
-            intermediateGraph.add(deployment, requirements: [], applied: false)
+            intermediateGraph.add(deployment, requirementsNames: [], applied: false)
             addActions.insert(.add(deployment, intermediateGraph))
         }
         
         // syncing dependencies
         for deployment in deploymentsToAdd {
             let actualDeployment = intermediateGraph.checkPresence(of: deployment)
-            let requirements = targetGraph.getRequirements(of: deployment)
-            let requirers = targetGraph.getRequirers(of: deployment)
+            let requirements = targetGraph.getRequirements(ofDeploymentNamed: deployment.name)
+            let requirers = targetGraph.getRequirers(ofDeploymentNamed: deployment.name)
             for requirement in requirements {
                 let actualRequirement = intermediateGraph.checkPresence(of: requirement)
                 intermediateGraph.add(actualDeployment --> actualRequirement)
@@ -66,8 +66,10 @@ public final class ConcretePlan: Plan {
             }
         }
         
+        intermediateGraph.checkForCycles()
+        
         // startup operations of those left unstarted (those who no longer depend on others.)
-        for deployment in intermediateGraph.nodes where deployment.status == .stopped {
+        for deployment in intermediateGraph.deployments where deployment.status == .stopped {
             deployment.start(considering: intermediateGraph, atomicPlan: &startActions)
         }
         
@@ -95,8 +97,8 @@ public final class ConcretePlan: Plan {
             }
         }
         
-        graph.nodes = targetGraph.nodes
-        graph.arcs = targetGraph.arcs
+        graph.deployments = targetGraph.deployments
+        graph.dependencies = targetGraph.dependencies
     }
     
     public var description: String {

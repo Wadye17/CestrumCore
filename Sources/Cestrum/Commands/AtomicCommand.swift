@@ -17,10 +17,18 @@ public enum AtomicCommand: Command, Hashable {
     var kubernetesEquivalent: [String] {
         switch self {
         case .add(let deployment, let dependencyGraph):
-            return [
-                "kubectl apply -f some/path/to/manifest.yaml",
-                "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)"
-            ]
+            if let manifestPath = deployment.manifestPath, manifestPath != "" {
+                return [
+                    "kubectl apply -f '\(manifestPath)'",
+                    "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)"
+                ]
+            } else {
+                return [
+                    "kubectl apply -f <MANIFEST-PATH-NOT-SPECIFIED>",
+                    "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)"
+                ]
+            }
+            
         case .remove(let deployment, let dependencyGraph):
             return ["kubectl delete deployment \(deployment.name) -n \(dependencyGraph.namespace)"]
         case .start(let deployment, let dependencyGraph):

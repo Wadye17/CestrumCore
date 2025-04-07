@@ -1,5 +1,5 @@
 //
-//  CESPLexer.swift
+//  CESRLexer.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 13/03/2025.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class CESPLexer {
+final class CESRLexer {
     private let input: String
     private var position: String.Index
     private var currentLine: Int = 1
@@ -17,8 +17,8 @@ final class CESPLexer {
         self.position = input.startIndex
     }
 
-    func tokenise() throws -> [CESPToken] {
-        var tokens: [CESPToken] = []
+    func tokenise() throws -> [CESRToken] {
+        var tokens: [CESRToken] = []
 
         while position < input.endIndex {
             let currentChar = input[position]
@@ -27,14 +27,14 @@ final class CESPLexer {
                 if currentChar == "\n" {
                     currentLine += 1
                 }
-                tokens.append(CESPToken(String(currentChar), kind: .whitespace, line: currentLine))
+                tokens.append(CESRToken(String(currentChar), kind: .whitespace, line: currentLine))
                 advance()
             } else if currentChar.isLetter {
                 tokens.append(identifierOrKeywordToken())
             } else if currentChar == "\"" {
                 tokens.append(try stringLiteralToken(line: currentLine))
             } else if isSymbol(currentChar) {
-                let kind: CESPToken.Kind
+                let kind: CESRToken.Kind
                 switch currentChar {
                 case ",":
                     kind = .comma
@@ -47,12 +47,12 @@ final class CESPLexer {
                 default:
                     kind = .unknown
                 }
-                tokens.append(CESPToken(String(currentChar), kind: kind, line: currentLine))
+                tokens.append(CESRToken(String(currentChar), kind: kind, line: currentLine))
                 advance()
             } else if currentChar.isNumber {
-                tokens.append(CESPToken(String(currentChar), kind: .unknown, line: currentLine))
+                tokens.append(CESRToken(String(currentChar), kind: .unknown, line: currentLine))
             } else {
-                tokens.append(CESPToken(String(currentChar), kind: .unknown, line: currentLine))
+                tokens.append(CESRToken(String(currentChar), kind: .unknown, line: currentLine))
                 advance()
             }
         }
@@ -74,12 +74,12 @@ final class CESPLexer {
         return symbols.contains(char)
     }
     
-    private func isOpeningBrace(_ char: Character) -> (Bool, CESPToken.Kind.Brace) {
+    private func isOpeningBrace(_ char: Character) -> (Bool, CESRToken.Kind.Brace) {
         let braces: Set<Character> = ["{", "}"]
         return (braces.contains(char), .init(rawValue: String(char))!)
     }
 
-    private func identifierOrKeywordToken() -> CESPToken {
+    private func identifierOrKeywordToken() -> CESRToken {
         var value = ""
 
         // Allow letters, numbers, and underscores in identifiers
@@ -88,13 +88,13 @@ final class CESPLexer {
             advance()
         }
 
-        let keywords: Set<String> = Set(CESPToken.Kind.Keyword.allCases.map { $0.rawValue })
-        let kind: CESPToken.Kind = keywords.contains(value) ? .keyword(.init(rawValue: value)!) : .identifier
+        let keywords: Set<String> = Set(CESRToken.Kind.Keyword.allCases.map { $0.rawValue })
+        let kind: CESRToken.Kind = keywords.contains(value) ? .keyword(.init(rawValue: value)!) : .identifier
 
-        return CESPToken(value, kind: kind, line: currentLine)
+        return CESRToken(value, kind: kind, line: currentLine)
     }
 
-    private func stringLiteralToken(line: Int) throws -> CESPToken {
+    private func stringLiteralToken(line: Int) throws -> CESRToken {
         advance() // Skip the opening quote
         var value = ""
         
@@ -106,7 +106,7 @@ final class CESPLexer {
                     // throw TokenisationError("Fatal error: Found a new line inside a label at line \(line); new lines are not allowed inside labels")
                 }
                 
-                return CESPToken(value, kind: .stringLiteral, line: currentLine)
+                return CESRToken(value, kind: .stringLiteral, line: currentLine)
             }
             value.append(input[position])
             advance()
@@ -119,13 +119,15 @@ final class CESPLexer {
     
     enum Phase: Equatable {
         case hooking
-        case adding(AddingStep)
+        case adding(ComplexOperationStep)
         case removing
         case replacing(ReplacementStep)
+        case binding(ComplexOperationStep)
+        case releasing(ComplexOperationStep)
         
-        enum AddingStep: Equatable {
+        enum ComplexOperationStep: Equatable {
             case deploy
-            case requirements
+            case deploymentSet
         }
         
         enum ReplacementStep: Equatable {
@@ -135,8 +137,8 @@ final class CESPLexer {
     }
 }
 
-extension CESPLexer.Phase {
-    mutating func update(for token: CESPToken) {
+extension CESRLexer.Phase {
+    mutating func update(for token: CESRToken) {
         switch token.kind {
         case .keyword(let keyword):
             switch keyword {
@@ -145,13 +147,21 @@ extension CESPLexer.Phase {
             case .add:
                 self = .adding(.deploy)
             case .requiring:
-                self = .adding(.requirements)
+                self = .adding(.deploymentSet)
             case .remove:
                 self = .removing
             case .replace:
                 self = .replacing(.old)
             case .with:
                 self = .replacing(.new)
+            case .bind:
+                self = .binding(.deploy)
+            case .to:
+                self = .binding(.deploymentSet)
+            case .release:
+                self = .releasing(.deploy)
+            case .from:
+                self = .releasing(.deploymentSet)
             }
         default:
             return

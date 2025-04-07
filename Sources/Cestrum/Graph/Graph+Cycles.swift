@@ -17,26 +17,26 @@ extension DependencyGraph {
     
     /// Returns `true` if this graph contains cycles.
     var hasCycles: Bool {
-        for dependency in self.arcs {
+        for dependency in self.dependencies {
             guard !dependency.isReflexive else {
                 return false
             }
         }
         
-        for dependency in self.arcs {
+        for dependency in self.dependencies {
             guard !dependency.isReflexive else { return true }
-            var visitedObjects: Set<Deployment> = []
+            var visitedObjects: Set<String> = []
             return hasCycled(currentDeployment: dependency.source, visited: &visitedObjects)
         }
         return false
     }
     
     /// Returns `true` if the given deployment cycles with its dependencies.
-    private func hasCycled(currentDeployment: Deployment, visited: inout Set<Deployment>) -> Bool {
+    private func hasCycled(currentDeployment: String, visited: inout Set<String>) -> Bool {
         if visited.contains(currentDeployment) { return true }
         visited.insert(currentDeployment)
-        for requirement in self.getRequirements(of: currentDeployment) {
-            return self.hasCycled(currentDeployment: requirement, visited: &visited)
+        for requirement in self.getRequirements(ofDeploymentNamed: currentDeployment) {
+            return self.hasCycled(currentDeployment: requirement.name, visited: &visited)
         }
         return false
     }

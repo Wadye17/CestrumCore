@@ -8,14 +8,14 @@
 import Foundation
 
 struct CESPAnalyser {
-    let tokens: [CESPToken]
+    let tokens: [CESRToken]
     
-    init(tokens: [CESPToken]) {
+    init(tokens: [CESRToken]) {
         self.tokens = tokens
     }
     
     func analyse() {
-        var step = CESPLexer.Phase.hooking
+        var step = CESRLexer.Phase.hooking
         
         guard !tokens.isEmpty else {
             fatalError("Error: Empty input")
@@ -32,7 +32,7 @@ struct CESPAnalyser {
             switch token.kind {
             case .identifier:
                 guard token.value.isValidVariableName else {
-                    fatalError("\(token.line) Error: Invalid identifier")
+                    fatalError("\(String(describing: token.line)) Error: Invalid identifier")
                 }
                 
             default:
@@ -40,14 +40,14 @@ struct CESPAnalyser {
             }
             
             if token.kind == .unknown {
-                fatalError("\(token.line) Error: Unknown symbol")
+                fatalError("\(String(describing: token.line)) Error: Unknown symbol")
             }
             
             let nextToken = tokens[index + 1]
             
             if let nextExpectedTokens = token.nextFlexibleExpectations(during: step) {
                 if !nextExpectedTokens.contains(nextToken.kind) {
-                    fatalError("\(token.line) Error: Expected \(nextExpectedTokens) after \(token) but found \(nextToken)")
+                    fatalError("\(String(describing: token.line)) Error: Expected \(nextExpectedTokens) after \(token) but found \(nextToken)")
                 }
             } else {
                 if nextToken == .end {

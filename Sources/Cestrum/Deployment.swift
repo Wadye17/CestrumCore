@@ -12,18 +12,22 @@ public final class Deployment: Codable {
     /// The name of the deployment as in Kubernetes.
     public let name: String
     
+    /// The path to the manifest of the deployment.
+    public let manifestPath: String?
+    
     /// The theoretical status of the deployment.
     public private(set) var status: Status
     
     /// Creates a new instance of a deployment.
-    init(_ name: String, _ status: Status) {
+    init(_ name: String, manifestPath: String? = nil, _ status: Status) {
         self.name = name
+        self.manifestPath = manifestPath
         self.status = status
     }
     
     /// Creates a new, uninitialised instance of a deployment.
-    convenience init(_ name: String) {
-        self.init(name, .stopped)
+    convenience init(_ name: String, manifestPath: String? = nil) {
+        self.init(name, manifestPath: manifestPath, .stopped)
     }
     
     /// Marks the deployment as started.
@@ -89,7 +93,7 @@ public final class Deployment: Codable {
     /// This is a shorthand function and is equivalent to using `getRequirements(of: deployment)`
     /// in the context of `DependencyGraph`.
     func requirements(in graph: DependencyGraph) -> Set<Deployment> {
-        return graph.getRequirements(of: self)
+        return graph.getRequirements(ofDeploymentNamed: self.name)
     }
     
     /// Returns the set of deployments that this deployment requires in the given graph.
@@ -97,7 +101,7 @@ public final class Deployment: Codable {
     /// This is a shorthand function and is equivalent to using `getRequirers(of: deployment)`
     /// in the context of `DependencyGraph`.
     func requirers(in graph: DependencyGraph) -> Set<Deployment> {
-        return graph.getRequirers(of: self)
+        return graph.getRequirers(ofDeploymentNamed: self.name)
     }
 }
 

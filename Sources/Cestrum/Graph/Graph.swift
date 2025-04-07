@@ -12,58 +12,36 @@ public final class DependencyGraph: DeepCopyable {
     /// The name of the graph.
     public let namespace: String
     /// The set of deployments.
-    var nodes: Set<Deployment>
+    var deployments: Set<Deployment>
     /// The set of dependencies.
-    var arcs: Set<Dependency>
+    var dependencies: Set<Dependency>
     
     /// Creates a new instance of a dependency graph.
     public init(name: String, deployments: Set<Deployment>, dependencies: Set<Dependency>) {
         self.namespace = name
-        self.nodes = deployments
-        self.arcs = dependencies
+        self.deployments = deployments
+        self.dependencies = dependencies
         self.boot()
-    }
-    
-    /// Used for encoding and decoding.
-    private enum CodingKeys: String, CodingKey {
-        case namespace, nodes, arcs
-    }
-    
-    /// Custom decoding to ensure the dependencies' elements reference the correct `Deployment` instances.
-    required public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.namespace = try container.decode(String.self, forKey: .namespace)
-        self.nodes = try container.decode(Set<Deployment>.self, forKey: .nodes)
-
-        let deploymentMap = Dictionary(uniqueKeysWithValues: nodes.map { ($0.name, $0) })
-        let decodedArcs = try container.decode([[String: String]].self, forKey: .arcs)
-
-        self.arcs = Set(decodedArcs.compactMap { dict in
-            guard let sourceName = dict["source"], let targetName = dict["target"],
-                  let sourceDeployment = deploymentMap[sourceName],
-                  let targetDeployment = deploymentMap[targetName] else { return nil }
-            return Dependency(source: sourceDeployment, target: targetDeployment)
-        })
     }
     
     /// Returns the deployment having the given name; returns `nil` if not found.
     subscript(_ name: String) -> Deployment? {
-        return self.nodes.first { $0.name == name }
+        return self.deployments.first { $0.name == name }
     }
     
     /// Returns the deployment having the given name; returns `nil` if not found.
     subscript(_ deployment: Deployment) -> Deployment? {
-        return self.nodes.first { $0 == deployment }
+        return self.deployments.first { $0 == deployment }
     }
     
     /// Returns the set of deployments with the given status.
     public subscript(_ status: Status) -> Set<Deployment> {
-        return self.nodes.filter { $0.status == status }
+        return self.deployments.filter { $0.status == status }
     }
     
     /// Returns `true` if the given deployment exists in this graph.
     public func contains(_ deployment: Deployment) -> Bool {
-        return self.nodes.contains(deployment)
+        return self.deployments.contains(deployment)
     }
     
     /// Returns the desired deployment — crashes the program when the deployment is not found.
@@ -78,54 +56,123 @@ public final class DependencyGraph: DeepCopyable {
         return deployment
     }
     
+    /// Returns the desired deployment by name — crashes the program when the deployment is not found.
+    ///
+    /// Use only when finding the deployment is critical.
+    /// For a safe retrieval, use either subscripts.
+    @discardableResult
+    public func checkPresence(ofDeploymentNamed name: String) -> Deployment {
+        guard let deployment = self[name] else {
+            fatalError("Fatal error: Deployment \(name) does not exist in graph \(self.namespace).")
+        }
+        return deployment
+    }
+    
+    /// Returns the desired deployments by names — crashes the program when at least one deployment is not found.
+    ///
+    /// Use only when finding the deployments is critical.
+    /// For a safe retrieval, use either subscripts.
+    @discardableResult
+    public func checkPresence(ofDeploymentsNamed names: Set<String>) -> Set<Deployment> {
+        var result = Set<Deployment>()
+        for name in names {
+            let deployment = self.checkPresence(ofDeploymentNamed: name)
+            result.insert(deployment)
+        }
+        return result
+    }
+    
     /// Returns the set of deployments that the given deployment requires (i.e., depends on).
-    public func getRequirements(of deployment: Deployment) -> Set<Deployment> {
-        let actualDeployment = self.checkPresence(of: deployment)
-        return Set(self.arcs.filter({ $0.source == actualDeployment }).map(\.target))
+    public func getRequirements(ofDeploymentNamed name: String) -> Set<Deployment> {
+        let actualDeployment = self.checkPresence(ofDeploymentNamed: name)
+        let requirementsNames = Set(self.dependencies.filter({ $0.source == actualDeployment.name }).map(\.target))
+        let actualRequirements = self.checkPresence(ofDeploymentsNamed: requirementsNames)
+        return actualRequirements
     }
     
     /// Returns the set of deployments that require (i.e., depend on) the given deployment.
-    public func getRequirers(of deployment: Deployment) -> Set<Deployment> {
-        let actualDeployment = self.checkPresence(of: deployment)
-        return Set(self.arcs.filter({ $0.target == actualDeployment }).map(\.source))
+    public func getRequirers(ofDeploymentNamed name: String) -> Set<Deployment> {
+        let actualDeployment = self.checkPresence(ofDeploymentNamed: name)
+        let requirersNames = Set(self.dependencies.filter({ $0.target == actualDeployment.name }).map(\.source))
+        let actualRequirers = self.checkPresence(ofDeploymentsNamed: requirersNames)
+        return actualRequirers
     }
     
     /// Adds the given deployment to the graph and handles its dependencies.
-    public func add<C: Sequence>(_ deployment: Deployment, requirements: C, applied: Bool = true) where C.Element == Deployment {
-        if !self.nodes.insert(deployment).inserted {
+    public func add<C: Sequence>(_ deployment: Deployment, requirements: C = [], applied: Bool = true) where C.Element == Deployment {
+        if !self.deployments.insert(deployment).inserted {
             print("Warning: Deployment \(deployment) already exists in graph \(self.namespace).")
         }
         for requirement in requirements {
             let actualRequirement = self.checkPresence(of: requirement)
-            self.arcs.insert(Dependency(source: deployment, target: actualRequirement))
+            self.dependencies.insert(Dependency(source: deployment.name, target: actualRequirement.name))
+        }
+        if applied { print("added \(deployment)")}
+    }
+    
+    /// Adds the given deployment to the graph and handles its dependencies.
+    public func add<C: Sequence>(_ deployment: Deployment, requirementsNames: C = [], applied: Bool = true) where C.Element == String {
+        if !self.deployments.insert(deployment).inserted {
+            print("Warning: Deployment \(deployment) already exists in graph \(self.namespace).")
+        }
+        for requirement in requirementsNames {
+            let actualRequirement = self.checkPresence(ofDeploymentNamed: requirement)
+            self.dependencies.insert(Dependency(source: deployment.name, target: actualRequirement.name))
         }
         if applied { print("added \(deployment)")}
     }
     
     public func add(_ dependency: Dependency) {
-        self.checkPresence(of: dependency.source)
-        self.checkPresence(of: dependency.target)
-        self.arcs.insert(dependency)
+        self.checkPresence(ofDeploymentNamed: dependency.source)
+        self.checkPresence(ofDeploymentNamed: dependency.target)
+        self.dependencies.insert(dependency)
+    }
+    
+    public func bindDeployment(named deploymentName: String, toDeploymentsNamed requirementsNames: Set<String>) {
+        self.checkPresence(ofDeploymentNamed: deploymentName)
+        self.checkPresence(ofDeploymentsNamed: requirementsNames)
+        for requirement in requirementsNames {
+            self.add(deploymentName --> requirement)
+        }
+    }
+    
+    public func unbindDeployment(name deploymentName: String, fromDeploymentsNamed otherDeployments: Set<String>) {
+        self.checkPresence(ofDeploymentNamed: deploymentName)
+        self.checkPresence(ofDeploymentsNamed: otherDeployments)
+        for dependency in dependencies where dependency.contains(deploymentName) {
+            for deployment in otherDeployments {
+                if dependency.contains(deployment) {
+                    self.dependencies.remove(dependency)
+                }
+            }
+        }
     }
     
     /// Removes the given deployment from the graph and automatically handles the dependencies.
-    public func remove(_ deployment: Deployment, applied: Bool = true) {
+    public func removeDeployment(_ deployment: Deployment, applied: Bool = true) {
         self.checkPresence(of: deployment)
-        self.arcs.subtract(Set(self.arcs.filter { $0.contains(deployment) }))
-        self.nodes.remove(deployment)
+        self.dependencies.subtract(Set(self.dependencies.filter { $0.contains(deployment.name) }))
+        self.deployments.remove(deployment)
         if applied { print("removed \(deployment)") }
+    }
+    
+    /// Removes the deployment with the given name from the graph, and automatically handles the removal of the dependencies involving it.
+    public func removeDeployment(named name: String, applied: Bool = true) {
+        let actualDeployment = self.checkPresence(ofDeploymentNamed: name)
+        self.removeDeployment(actualDeployment)
     }
     
     /// Starts all the deployments with respect to this dependency graph.
     func boot() {
         self.checkForCycles()
-        for deployment in nodes {
+        for deployment in deployments {
             deployment.start(considering: self)
         }
     }
     
     public func generatePlan(from abstractPlan: AbstractPlan) -> ConcretePlan {
         let targetGraph = abstractPlan.createTarget(on: self)
+        targetGraph.checkForCycles()
         let concretePlan = ConcretePlan(from: self, to: targetGraph)
         return concretePlan
     }
@@ -135,9 +182,9 @@ extension DependencyGraph: CustomStringConvertible {
     public var description: String {
         """
         graph \(self.namespace) {
-            deployments {\(self.nodes.map(\.description).sorted().joined(separator: ", "))}
+            deployments {\(self.deployments.map(\.description).sorted().joined(separator: ", "))}
             dependencies {
-            \t\(self.arcs.map(\.description).sorted().joined(separator: "\n\t\t"))
+            \t\(self.dependencies.map(\.description).sorted().joined(separator: "\n\t\t"))
             }
         }
         """
@@ -147,13 +194,13 @@ extension DependencyGraph: CustomStringConvertible {
 extension DependencyGraph: Hashable {
     public static func == (_ lhs: DependencyGraph, _ rhs: DependencyGraph) -> Bool {
         lhs.namespace == rhs.namespace
-        && lhs.nodes == rhs.nodes
-        && lhs.arcs == rhs.arcs
+        && lhs.deployments == rhs.deployments
+        && lhs.dependencies == rhs.dependencies
     }
     
     public func hash(into hasher: inout Hasher) {
         hasher.combine(self.namespace)
-        hasher.combine(self.nodes)
-        hasher.combine(self.arcs)
+        hasher.combine(self.deployments)
+        hasher.combine(self.dependencies)
     }
 }

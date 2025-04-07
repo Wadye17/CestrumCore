@@ -1,5 +1,5 @@
 //
-//  CESPToken.swift
+//  CESRToken.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 13/03/2025.
@@ -7,10 +7,10 @@
 
 import Foundation
 
-final class CESPToken: Hashable, CustomStringConvertible {
+final class CESRToken: Hashable, CustomStringConvertible {
     let value: String
     var kind: Kind
-    let line: Int?
+    let line: Int!
     
     init(_ value: String, kind: Kind) {
         self.value = value
@@ -24,9 +24,9 @@ final class CESPToken: Hashable, CustomStringConvertible {
         self.line = line
     }
     
-    nonisolated(unsafe) static let end = CESPToken("\0", kind: .end)
+    nonisolated(unsafe) static let end = CESRToken("\0", kind: .end)
     
-    func nextFlexibleExpectations(during phase: CESPLexer.Phase) -> Set<Kind>? {
+    func nextFlexibleExpectations(during phase: CESRLexer.Phase) -> Set<Kind>? {
         switch self.kind {
         case .keyword(let keyword):
             switch keyword {
@@ -42,6 +42,14 @@ final class CESPToken: Hashable, CustomStringConvertible {
                 return [.identifier]
             case .with:
                 return [.identifier]
+            case .bind:
+                return [.identifier]
+            case .to:
+                return [.brace(.opening)]
+            case .release:
+                return [.identifier]
+            case .from:
+                return [.brace(.opening)]
             }
         case .identifier:
             switch phase {
@@ -51,7 +59,7 @@ final class CESPToken: Hashable, CustomStringConvertible {
                 switch addingStep {
                 case .deploy:
                     return [.stringLiteral]
-                case .requirements:
+                case .deploymentSet:
                     return [.comma, .brace(.closing)]
                 }
             case .removing:
@@ -63,13 +71,27 @@ final class CESPToken: Hashable, CustomStringConvertible {
                 case .new:
                     return [.stringLiteral]
                 }
+            case .binding(let step):
+                switch step {
+                case .deploy:
+                    return [.keyword(.to)]
+                case .deploymentSet:
+                    return [.comma, .brace(.closing)]
+                }
+            case .releasing(let step):
+                switch step {
+                case .deploy:
+                    return [.keyword(.from)]
+                case .deploymentSet:
+                    return [.comma, .brace(.closing)]
+                }
             }
         case .stringLiteral:
             switch phase {
             case .hooking, .replacing(_):
                 return [.semicolon]
             case .adding(_):
-                guard case CESPLexer.Phase.adding(.deploy) = phase else {
+                guard case CESRLexer.Phase.adding(.deploy) = phase else {
                     return nil
                 }
                 return [.semicolon, .keyword(.requiring)]
@@ -82,7 +104,7 @@ final class CESPToken: Hashable, CustomStringConvertible {
                 switch addingStep {
                 case .deploy:
                     return nil
-                case .requirements:
+                case .deploymentSet:
                     return [.identifier]
                 }
             default:
@@ -91,18 +113,34 @@ final class CESPToken: Hashable, CustomStringConvertible {
         case .brace(let brace):
             switch brace {
             case .opening:
-                guard case CESPLexer.Phase.adding(.requirements) = phase else {
+                switch phase {
+                case .adding(let step):
+                    guard step == .deploymentSet else {
+                        return nil
+                    }
+                    return [.identifier, .brace(.closing)]
+                case .binding(let step), .releasing(let step):
+                    guard step == .deploymentSet else {
+                        return nil
+                    }
+                    return [.identifier]
+                default:
                     return nil
                 }
-                return [.identifier, .brace(.closing)]
             case .closing:
-                guard case CESPLexer.Phase.adding(.requirements) = phase else {
+                switch phase {
+                case .adding(let step), .binding(let step), .releasing(let step):
+                    guard step == .deploymentSet else {
+                        return nil
+                    }
+                    return [.semicolon]
+                default:
                     return nil
                 }
-                return [.semicolon]
             }
         case .semicolon:
-            return [.keyword(.add), .keyword(.remove), .keyword(.replace), .end]
+            let instructionTokenKinds = Set(CESRToken.Kind.Keyword.instructionKeywords.map({ CESRToken.Kind.keyword($0) }))
+            return instructionTokenKinds.union([.end])
         case .unknown:
             return nil
         case .end:
@@ -140,7 +178,7 @@ final class CESPToken: Hashable, CustomStringConvertible {
         }
     }
     
-    static func == (_ lhs: CESPToken, _ rhs: CESPToken) -> Bool {
+    static func == (_ lhs: CESRToken, _ rhs: CESRToken) -> Bool {
         lhs.value == rhs.value
         && lhs.kind == rhs.kind
     }
@@ -151,7 +189,7 @@ final class CESPToken: Hashable, CustomStringConvertible {
     }
 }
 
-extension CESPToken {
+extension CESRToken {
     enum Kind: Hashable {
         case keyword(Keyword)
         case identifier
@@ -179,6 +217,18 @@ extension CESPToken {
             case remove
             case replace
             case with
+            case bind
+            case to
+            case release
+            case from
+            
+            static var instructionKeywords: Set<Keyword> {
+                return [.add, .remove, .replace, .bind, .release]
+            }
+            
+            static var setIntroductorKeywords: Set<Keyword> {
+                return [.requiring, .to, .from]
+            }
             
             init?(rawValue: String) {
                 switch rawValue {
@@ -194,6 +244,14 @@ extension CESPToken {
                     self = .replace
                 case "with":
                     self = .with
+                case "bind":
+                    self = .bind
+                case "to":
+                    self = .to
+                case "release":
+                    self = .release
+                case "from":
+                    self = .from
                 default:
                     return nil
                 }

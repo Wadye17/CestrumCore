@@ -32,11 +32,14 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
         for line in lines {
             line.reflect(considering: targetGraph)
         }
+        guard !targetGraph.hasCycles else {
+            fatalError("Fatal error: Target graph of '\(graph.namespace)' contains at least one cycle.\n\(targetGraph)")
+        }
         return targetGraph
     }
     
     public static func generate(from code: String) -> (graphName: String, abstractPlan: AbstractPlan) {
-        return CESPInterpreter.interpret(code: code)
+        return CESRInterpreter.interpret(code: code)
     }
     
     public var description: String {

@@ -1,5 +1,5 @@
 //
-//  CESPTranslator.swift
+//  CESRTranslator.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 14/03/2025.
@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct CESPTranslator {
-    let tokens: [CESPToken]
+struct CESRTranslator {
+    let tokens: [CESRToken]
     
-    init(tokens: [CESPToken]) {
+    init(tokens: [CESRToken]) {
         self.tokens = tokens
     }
     
@@ -24,21 +24,31 @@ struct CESPTranslator {
             case .keyword(.hook):
                 graphName = instruction[1].value
             case .keyword(.add):
-                let newDeployment = Deployment(instruction[1].value)
+                let deploymentName = instruction[1].value
                 // dont forget the YAML
-                let manifestFilePath = instruction[2].value
-                let requirements = extractRequirements(from: instruction)
-                abstractPlan.add(.add(newDeployment, requirements: Set(requirements.map({ Deployment($0) }))))
+                let manifestPath = instruction[2].value
+                let newDeployment = Deployment(deploymentName, manifestPath: manifestPath)
+                let requirements = extractDeploymentSet(from: instruction)
+                abstractPlan.add(.add(newDeployment, requirements: requirements))
             case .keyword(.remove):
-                let deploymentToRemove = Deployment(instruction[1].value)
-                abstractPlan.add(.remove(deploymentToRemove))
+                let nameOfDeploymentToRemove = instruction[1].value
+                abstractPlan.add(.remove(nameOfDeploymentToRemove))
             case .keyword(.replace):
-                let oldDeployment = Deployment(instruction[1].value)
-                let newDeployment = Deployment(instruction[3].value)
-                let manifestFilePath = instruction[4].value
-                abstractPlan.add(.replace(oldDeployment: oldDeployment, newDeployment: newDeployment))
+                let oldDeploymentName = instruction[1].value
+                let newDeploymentName = instruction[3].value
+                let newDeploymentManifestPath = instruction[4].value
+                let newDeployment = Deployment(newDeploymentName, manifestPath: newDeploymentManifestPath)
+                abstractPlan.add(.replace(oldDeploymentName: oldDeploymentName, newDeployment: newDeployment))
+            case .keyword(.bind):
+                let deploymentName = instruction[1].value
+                let requirementsNames = extractDeploymentSet(from: instruction)
+                abstractPlan.add(.bind(deploymentName: deploymentName, requirementsNames: requirementsNames))
+            case .keyword(.release):
+                let deploymentName = instruction[1].value
+                let otherDeployments = extractDeploymentSet(from: instruction)
+                abstractPlan.add(.release(deploymentName: deploymentName, otherDeploymentsNames: otherDeployments))
             default:
-                fatalError("Unsupported keyword.")
+                print("UNEXPECTED: Unsupported line type '\(instruction)'")
             }
         }
         guard let graphName else {
@@ -47,9 +57,9 @@ struct CESPTranslator {
         return (graphName, abstractPlan)
     }
     
-    func sliceTokens(_ tokens: [CESPToken]) -> [[CESPToken]] {
-        var slices: [[CESPToken]] = []
-        var currentSlice: [CESPToken] = []
+    func sliceTokens(_ tokens: [CESRToken]) -> [[CESRToken]] {
+        var slices: [[CESRToken]] = []
+        var currentSlice: [CESRToken] = []
         var isCollecting = false
 
         for token in tokens {
@@ -58,7 +68,7 @@ struct CESPTranslator {
 
             // If token is a starting keyword, start a new slice
             if case .keyword(let keyword) = token.kind,
-               [.hook, .add, .remove, .replace].contains(keyword) {
+               [.hook, .add, .remove, .replace, .bind, .release].contains(keyword) {
                 // If we were collecting, store the previous slice
                 if !currentSlice.isEmpty {
                     slices.append(currentSlice)
@@ -83,13 +93,13 @@ struct CESPTranslator {
         return slices
     }
     
-    func extractRequirements(from slice: [CESPToken]) -> Set<String> {
+    func extractDeploymentSet(from slice: [CESRToken]) -> Set<String> {
         var requirements: Set<String> = []
         var isCollecting = false
 
         for token in slice {
             switch token.kind {
-            case .keyword(.requiring):
+            case .keyword(.requiring), .keyword(.to), .keyword(.from):
                 isCollecting = true  // Start collecting after "requiring"
             case .brace(.opening):
                 continue  // Ignore the opening brace "{"
