@@ -30,6 +30,26 @@ public final class Deployment: Codable {
         self.init(name, manifestPath: manifestPath, .stopped)
     }
     
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case status
+    }
+    
+    /// Decodes the deployment from a name and a status.
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.status = try container.decode(Status.self, forKey: .status)
+        self.manifestPath = nil
+    }
+    
+    /// Encodes this deployment, considering only its name and status.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.name, forKey: .name)
+        try container.encode(self.status, forKey: .status)
+    }
+    
     /// Marks the deployment as started.
     func forceStart() {
         self.status = .started
