@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>CESR</string>
+	<key>scopeName</key>
+	<string>CESR</string>
+	<key>fileTypes</key>
+	<array>
+		<string>cesr</string>
+	</array>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>name</key>
+			<string>keyword.control.cesr</string>
+			<key>match</key>
+			<string>\b(hook|add|remove|replace|bind|release|requiring|from|to|with)\b</string>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>string.quoted.double.cesr</string>
+			<key>begin</key>
+			<string>&quot;</string>
+			<key>end</key>
+			<string>&quot;</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>name</key>
+					<string>constant.character.escape.cesr</string>
+					<key>match</key>
+					<string>\\.</string>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>punctuation.separator.cesr</string>
+			<key>match</key>
+			<string>[{},;]</string>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>variable.other.identifier.cesr</string>
+			<key>match</key>
+			<string>\b[a-zA-Z_][a-zA-Z0-9_]*\b</string>
+		</dict>
+	</array>
+	<key>uuid</key>
+	<string>6F15728E-893D-4972-A4F1-CESR00000000</string>
+</dict>
+</plist>
