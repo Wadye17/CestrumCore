@@ -18,6 +18,7 @@ enum CESRInterpretationErrorKind: LocalizedError {
     case unclosedStringLiteral(firstLine: Int)
     case invalidPath
     case manifestFileDoesNotExist(path: String)
+    case invalidManifestExtension(String)
     case emptySet(CESRLexer.Phase)
     
     var errorDescription: String? {
@@ -42,6 +43,8 @@ enum CESRInterpretationErrorKind: LocalizedError {
             "Invalid path provided; a path string literal must be a valid URL"
         case .manifestFileDoesNotExist(let path):
             "Manifest file at \(path) does not exist"
+        case .invalidManifestExtension(let ext):
+            "Invalid manifest file extension '.\(ext)'; supported extensions are '.yaml' and '.yml'"
         case .emptySet(let phase):
             "Deployment sets must not be empty in a \(phase.messageInterpolationDescription)"
         }

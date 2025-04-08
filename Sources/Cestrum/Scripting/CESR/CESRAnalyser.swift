@@ -43,18 +43,12 @@ struct CESRAnalyser {
                     guard complexOperationStep == .deploy else {
                         break
                     }
-                    guard let _ = URL(string: token.value) else {
-                        errors.append(CESRError(type: .invalidPath, at: token.line))
-                        break
-                    }
+                    verifyPathString(in: token)
                 case .replacing(let replacementStep):
                     guard replacementStep == .new else {
                         break
                     }
-                    guard let _ = URL(string: token.value) else {
-                        errors.append(CESRError(type: .invalidPath, at: token.line))
-                        break
-                    }
+                    verifyPathString(in: token)
                 default:
                     break
                 }
@@ -78,5 +72,22 @@ struct CESRAnalyser {
         }
         
         return errors
+        
+        func verifyPathString(in token: CESRToken) {
+            guard let _ = URL(string: token.value) else {
+                errors.append(CESRError(type: .invalidPath, at: token.line))
+                return
+            }
+            let fileURL = URL(fileURLWithPath: token.value)
+            guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                errors.append(CESRError(type: .manifestFileDoesNotExist(path: token.value), at: token.line))
+                return
+            }
+            let fileExtension = fileURL.pathExtension
+            guard ["yaml", "yml"].contains(fileExtension) else {
+                errors.append(CESRError(type: .invalidManifestExtension(fileExtension), at: token.line))
+                return
+            }
+        }
     }
 }
