@@ -7,6 +7,9 @@
 
 import Foundation
 
+/// A unit responsible for translating a sequence of CESR tokens into an internal representation of reconfiguration operations.
+///
+/// - Important: The CESR translator may only be used **after** the analysis phase using ``CESRAnalyser``.
 struct CESRTranslator {
     let tokens: [CESRToken]
     

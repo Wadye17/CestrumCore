@@ -111,7 +111,7 @@ struct GraphTests {
     }
     
     @Test
-    func testCESP() {
+    func testCESR() {
         let code =
         """
         hook "Typical_Graph";
@@ -124,25 +124,29 @@ struct GraphTests {
         release A from {ND};
         """
         
-        let lexer = CESRLexer(input: code)
-        var tokens = try! lexer.tokenise()
-        tokens = tokens.filter { !$0.kind.isDisposable }
-        print(tokens)
-        let analyser = CESPAnalyser(tokens: tokens)
-        analyser.analyse()
-        let translator = CESRTranslator(tokens: tokens)
-        let (graphName, abstractPlan) = translator.translate()
-        print(graphName)
-        print(">>>>>>>>>>>")
-        print(abstractPlan)
-        print(">>>>>>>>>>>")
-        let graph = constructTypicalGraph()
-        print(graph)
-        let concretePlan = graph.generatePlan(from: abstractPlan)
-        print(concretePlan)
-        print("KUBERNETES EQUIVALENT:")
-        print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
-        concretePlan.apply(on: graph, onKubernetes: false)
-        print(graph)
+        let interpretationResult = CESRInterpreter.interpret(code: code)
+        switch interpretationResult {
+        case .success((let graphName, let abstractPlan)):
+            print(graphName)
+            print(">>>>>>>>>>>")
+            print(abstractPlan)
+            print(">>>>>>>>>>>")
+            let graph = constructTypicalGraph()
+            print(graph)
+            let concretePlan = graph.generatePlan(from: abstractPlan)
+            print(concretePlan)
+            print("KUBERNETES EQUIVALENT:")
+            print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
+            concretePlan.apply(on: graph, onKubernetes: false)
+            print(graph)
+        case .failure(let errors):
+            for error in errors {
+                if let line = error.line {
+                    print("- Line \(line): \(error.message)")
+                } else {
+                    print("- \(error.message)")
+                }
+            }
+        }
     }
 }

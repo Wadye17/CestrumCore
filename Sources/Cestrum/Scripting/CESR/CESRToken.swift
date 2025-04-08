@@ -7,12 +7,13 @@
 
 import Foundation
 
-final class CESRToken: Hashable, CustomStringConvertible {
+/// Represents a token in the CESR language.
+final class CESRToken: Hashable, CustomStringConvertible, Sendable {
     let value: String
-    var kind: Kind
+    let kind: Kind
     let line: Int!
     
-    init(_ value: String, kind: Kind) {
+    private init(_ value: String, kind: Kind) {
         self.value = value
         self.kind = kind
         self.line = nil
@@ -24,7 +25,7 @@ final class CESRToken: Hashable, CustomStringConvertible {
         self.line = line
     }
     
-    nonisolated(unsafe) static let end = CESRToken("\0", kind: .end)
+    static let end = CESRToken("\0", kind: .end)
     
     func nextFlexibleExpectations(during phase: CESRLexer.Phase) -> Set<Kind>? {
         switch self.kind {
@@ -190,7 +191,7 @@ final class CESRToken: Hashable, CustomStringConvertible {
 }
 
 extension CESRToken {
-    enum Kind: Hashable {
+    enum Kind: Hashable, CustomStringConvertible {
         case keyword(Keyword)
         case identifier
         case stringLiteral
@@ -200,6 +201,29 @@ extension CESRToken {
         case whitespace
         case unknown
         case end
+        
+        var description: String {
+            switch self {
+            case .keyword(let keyword):
+                "'\(keyword)'"
+            case .identifier:
+                "deployment"
+            case .stringLiteral:
+                "string literal"
+            case .comma:
+                "comma"
+            case .brace(let brace):
+                "'\(brace.rawValue)'"
+            case .semicolon:
+                "semicolon"
+            case .whitespace:
+                "whitespace"
+            case .unknown:
+                "unknown symbol"
+            case .end:
+                "end of code"
+            }
+        }
         
         var isDisposable: Bool {
             switch self {

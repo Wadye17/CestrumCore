@@ -38,10 +38,6 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
         return targetGraph
     }
     
-    public static func generate(from code: String) -> (graphName: String, abstractPlan: AbstractPlan) {
-        return CESRInterpreter.interpret(code: code)
-    }
-    
     public var description: String {
         self.lines.map({ $0.description }).joined(separator: "\n")
     }

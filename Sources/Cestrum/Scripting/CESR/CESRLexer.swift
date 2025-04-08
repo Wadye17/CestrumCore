@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A unit which decomposes a code written in CESR language into separate tokens.
 final class CESRLexer {
     private let input: String
     private var position: String.Index
@@ -17,8 +18,9 @@ final class CESRLexer {
         self.position = input.startIndex
     }
 
-    func tokenise() throws -> [CESRToken] {
+    func tokenise() -> (tokens: [CESRToken], errors: [CESRError]) {
         var tokens: [CESRToken] = []
+        var errors: [CESRError] = []
 
         while position < input.endIndex {
             let currentChar = input[position]
@@ -32,7 +34,9 @@ final class CESRLexer {
             } else if currentChar.isLetter {
                 tokens.append(identifierOrKeywordToken())
             } else if currentChar == "\"" {
-                tokens.append(try stringLiteralToken(line: currentLine))
+                if let stringLiteralToken = stringLiteralToken(line: currentLine, errors: &errors) {
+                    tokens.append(stringLiteralToken)
+                }
             } else if isSymbol(currentChar) {
                 let kind: CESRToken.Kind
                 switch currentChar {
@@ -57,7 +61,9 @@ final class CESRLexer {
             }
         }
         tokens.append(.end)
-        return tokens
+        
+        tokens = tokens.filter { !$0.kind.isDisposable }
+        return (tokens, errors)
     }
 
     private func advance() {
@@ -94,7 +100,7 @@ final class CESRLexer {
         return CESRToken(value, kind: kind, line: currentLine)
     }
 
-    private func stringLiteralToken(line: Int) throws -> CESRToken {
+    private func stringLiteralToken(line: Int, errors: inout [CESRError]) -> CESRToken? {
         advance() // Skip the opening quote
         var value = ""
         
@@ -102,8 +108,8 @@ final class CESRLexer {
             if input[position] == "\"" {
                 advance() // Skip the closing quote
                 guard !value.contains("\n") else {
-                    fatalError("Found a new line inside a label at line \(line); new lines are not allowed inside labels")
-                    // throw TokenisationError("Fatal error: Found a new line inside a label at line \(line); new lines are not allowed inside labels")
+                    errors.append(CESRError(type: .multilineString, at: line))
+                    return nil
                 }
                 
                 return CESRToken(value, kind: .stringLiteral, line: currentLine)
@@ -113,8 +119,8 @@ final class CESRLexer {
         }
         
         // If we reach this, the string literal was not closed
-        fatalError("Fatal error: Unclosed label string literal starting at line \(line); perhaps you forgot to close it with a double quotation mark?")
-        // throw TokenisationError("Fatal error: Unclosed label string literal starting at line \(line); perhaps you forgot to close it with a double quotation mark?")
+        errors.append(CESRError(type: .unclosedStringLiteral(firstLine: line), at: line))
+        return nil
     }
     
     enum Phase: Equatable {
@@ -133,6 +139,23 @@ final class CESRLexer {
         enum ReplacementStep: Equatable {
             case old
             case new
+        }
+        
+        var messageInterpolationDescription: String {
+            switch self {
+            case .hooking:
+                "hooking"
+            case .adding(_):
+                "'add' operations"
+            case .removing:
+                "'remove' operation"
+            case .replacing(_):
+                "'replace' operation"
+            case .binding(_):
+                "'bind' operation"
+            case .releasing(_):
+                "'release' operation"
+            }
         }
     }
 }
