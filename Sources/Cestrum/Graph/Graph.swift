@@ -159,7 +159,7 @@ public final class DependencyGraph: DeepCopyable {
     /// Removes the deployment with the given name from the graph, and automatically handles the removal of the dependencies involving it.
     public func removeDeployment(named name: String, applied: Bool = true) {
         let actualDeployment = self.checkPresence(ofDeploymentNamed: name)
-        self.removeDeployment(actualDeployment)
+        self.removeDeployment(actualDeployment, applied: applied)
     }
     
     /// Starts all the deployments with respect to this dependency graph.
