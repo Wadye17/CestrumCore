@@ -79,10 +79,10 @@ struct CESRAnalyser {
                 return
             }
             let fileURL = URL(fileURLWithPath: token.value)
-            guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            /* guard FileManager.default.fileExists(atPath: fileURL.path) else {
                 errors.append(CESRError(type: .manifestFileDoesNotExist(path: token.value), at: token.line))
                 return
-            }
+            } */
             let fileExtension = fileURL.pathExtension
             guard ["yaml", "yml"].contains(fileExtension) else {
                 errors.append(CESRError(type: .invalidManifestExtension(fileExtension), at: token.line))
