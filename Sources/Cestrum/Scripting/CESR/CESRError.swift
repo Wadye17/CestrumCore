@@ -26,7 +26,7 @@ enum CESRInterpretationErrorKind: LocalizedError {
         case .emptyInput:
             "Empty input"
         case .expectedHook:
-            "Expected hook; CESR code must start with a 'hook' operation"
+            "Expected hook; CESR code must begin with a 'hook' operation"
         case .unexpectedToken(let expectedTokens, let foundToken):
             "Excpected \(expectedTokens.map(\.description).joined(separator: ", or ")); but found \(foundToken)"
         case .invalidIdentifier(let value):
