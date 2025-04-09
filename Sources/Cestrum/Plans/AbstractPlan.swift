@@ -46,6 +46,10 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
         return true
     }
     
+    public var isEmpty: Bool {
+        self.lines.isEmpty
+    }
+    
     public var description: String {
         self.lines.map({ $0.description }).joined(separator: "\n")
     }
