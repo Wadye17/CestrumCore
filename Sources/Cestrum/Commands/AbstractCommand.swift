@@ -14,7 +14,7 @@ public enum AbstractCommand: Command {
     case bind(deploymentName: String, requirementsNames: Set<String>)
     case release(deploymentName: String, otherDeploymentsNames: Set<String>)
     
-    public func reflect(considering graph: DependencyGraph) {
+    func reflect(considering graph: DependencyGraph) {
         switch self {
         case .add(let deployment, let requirements):
             graph.add(deployment, requirementsNames: requirements, applied: false)
@@ -46,6 +46,15 @@ public enum AbstractCommand: Command {
             "bind \(deploymentName) to {\(requirementsNames.joined(separator: ", "))}"
         case .release(let deploymentName, let otherDeploymentsNames):
             "release \(deploymentName) from {\(otherDeploymentsNames.joined(separator: ", "))}"
+        }
+    }
+    
+    public var isTransparent: Bool {
+        switch self {
+        case .bind, .release:
+            true
+        default:
+            false
         }
     }
 }

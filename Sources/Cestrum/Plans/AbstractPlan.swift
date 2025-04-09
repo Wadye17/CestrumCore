@@ -38,6 +38,14 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
         return targetGraph
     }
     
+    public var isTransparent: Bool {
+        for line in lines {
+            guard line.isTransparent else { return false }
+            return true
+        }
+        return true
+    }
+    
     public var description: String {
         self.lines.map({ $0.description }).joined(separator: "\n")
     }
