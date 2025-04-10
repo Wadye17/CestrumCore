@@ -51,7 +51,7 @@ public final class ConcretePlan: Plan {
             addActions.insert(.add(deployment, intermediateGraph))
         }
         
-        // syncing dependencies
+        // syncing dependencies with those newly added
         for deployment in deploymentsToAdd {
             let actualDeployment = intermediateGraph.checkPresence(of: deployment)
             let requirements = targetGraph.getRequirements(ofDeploymentNamed: deployment.name)
@@ -65,6 +65,9 @@ public final class ConcretePlan: Plan {
                 intermediateGraph.add(actualRequirer --> actualDeployment)
             }
         }
+        
+        // syncing all dependencies (even those newly introduced)
+        intermediateGraph.dependencies = targetGraph.dependencies
         
         intermediateGraph.checkForCycles()
         
