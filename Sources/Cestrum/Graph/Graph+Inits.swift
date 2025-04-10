@@ -38,4 +38,16 @@ extension DependencyGraph {
     convenience init(name: String, deployments: Deployment..., @DependencyBuilder dependencies: () -> Set<Dependency>) {
         self.init(name: name, deployments: Set(deployments), dependencies: dependencies())
     }
+    
+    /// Creates a new instance of a dependency graph from a given graph description instance.
+    ///
+    /// ``GraphDescription`` is a placeholder component whilst the CESC (Cestrum Configuration) language is not yet built.
+    convenience public init(description: GraphDescription) throws {
+        let actualDeployments = Set(description.deployments.map { Deployment($0, .started) })
+        self.init(
+            name: description.namespace,
+            deployments: actualDeployments,
+            dependencies: description.dependencies
+        )
+    }
 }
