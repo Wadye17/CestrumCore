@@ -27,7 +27,11 @@ final class CESRToken: Hashable, CustomStringConvertible, Sendable {
     
     static let end = CESRToken("\0", kind: .end)
     
-    func nextFlexibleExpectations(during phase: CESRLexer.Phase) -> Set<Kind>? {
+    static func end(at line: Int) -> CESRToken {
+        CESRToken("\0", kind: .end, line: line)
+    }
+    
+    func nextFlexibleExpectations(during phase: CESRLexer.Context) -> Set<Kind>? {
         switch self.kind {
         case .keyword(let keyword):
             switch keyword {
@@ -86,13 +90,19 @@ final class CESRToken: Hashable, CustomStringConvertible, Sendable {
                 case .deploymentSet:
                     return [.comma, .brace(.closing)]
                 }
+            case .beginning:
+                return nil
+            case .unknown:
+                return nil
+            case .break:
+                return nil
             }
         case .stringLiteral:
             switch phase {
             case .hooking, .replacing(_):
                 return [.semicolon]
             case .adding(_):
-                guard case CESRLexer.Phase.adding(.deploy) = phase else {
+                guard case CESRLexer.Context.adding(.deploy) = phase else {
                     return nil
                 }
                 return [.semicolon, .keyword(.requiring)]
@@ -158,16 +168,16 @@ final class CESRToken: Hashable, CustomStringConvertible, Sendable {
         case .brace(let brace):
             switch brace {
             case .opening:
-                "opening brace"
+                "'{'"
             case .closing:
-                "closing brace"
+                "'}'"
             }
         case .comma:
             "comma"
         case .semicolon:
             "semicolon"
         case .end:
-            "end of file"
+            "end of code"
         case .identifier:
             "identifier '\(value)'"
         case .stringLiteral:

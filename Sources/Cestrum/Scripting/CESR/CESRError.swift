@@ -11,6 +11,8 @@ enum CESRInterpretationErrorKind: LocalizedError {
     case emptyInput
     case expectedHook
     case unexpectedToken(expectedTokens: [CESRToken.Kind], foundToken: CESRToken)
+    case expectedSemicolon
+    case expectedOperationOrEnd(foundToken: CESRToken)
     case invalidIdentifier(String)
     case unknownSymbol(String)
     case emptyStringLiteral
@@ -19,7 +21,8 @@ enum CESRInterpretationErrorKind: LocalizedError {
     case invalidPath
     case manifestFileDoesNotExist(path: String)
     case invalidManifestExtension(String)
-    case emptySet(CESRLexer.Phase)
+    case emptySet(CESRLexer.Context)
+    case unwelcomeToken(CESRToken)
     
     var errorDescription: String? {
         switch self {
@@ -44,9 +47,16 @@ enum CESRInterpretationErrorKind: LocalizedError {
         case .manifestFileDoesNotExist(let path):
             "Manifest file at \(path) does not exist"
         case .invalidManifestExtension(let ext):
-            "Invalid manifest file extension '.\(ext)'; supported extensions are '.yaml' and '.yml'"
+            ext.isEmpty ? "Path does not have an extension, which is required"
+            : "Invalid manifest file extension '.\(ext)'; supported extensions are '.yaml' and '.yml'"
         case .emptySet(let phase):
             "Deployment sets must not be empty in a \(phase.messageInterpolationDescription)"
+        case .expectedOperationOrEnd(let foundToken):
+            "Expected operation or end of code; but found \(foundToken)"
+        case .expectedSemicolon:
+            "Expected semicolon"
+        case .unwelcomeToken(let token):
+            "\(token.description.firstCapitalised) out of context"
         }
     }
 }

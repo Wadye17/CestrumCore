@@ -142,9 +142,9 @@ struct GraphTests {
         case .failure(let errors):
             for error in errors {
                 if let line = error.line {
-                    print("- Line \(line): \(error.message)")
+                    print(" | Line \(line): \(error.message)")
                 } else {
-                    print("- \(error.message)")
+                    print(" | \(error.message)")
                 }
             }
         }

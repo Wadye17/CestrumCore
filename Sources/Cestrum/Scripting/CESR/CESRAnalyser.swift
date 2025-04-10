@@ -16,11 +16,11 @@ struct CESRAnalyser {
     }
     
     func analyse() -> [CESRError] {
-        var step = CESRLexer.Phase.hooking
+        var context = CESRLexer.Context.beginning
         var errors: [CESRError] = []
         
         guard !tokens.isEmpty, let firstToken = tokens.first else {
-            errors.append(CESRError(type: .emptyInput, at: 0))
+            errors.append(CESRError(type: .emptyInput))
             return errors
         }
         
@@ -29,6 +29,8 @@ struct CESRAnalyser {
         }
         
         for (index, token) in tokens.enumerated() {
+            context.update(for: token)
+            
             guard index < tokens.count - 1 else { break }
             
             // Special treatments...
@@ -38,7 +40,16 @@ struct CESRAnalyser {
                     errors.append(CESRError(type: .invalidIdentifier(token.value), at: token.line))
                 }
             case .stringLiteral:
-                switch step {
+                print("Found a string literal '\(token.value)'")
+                print(context)
+                guard context == .hooking || context == .adding(.deploy) || context == .replacing(.new) else {
+                    break
+                }
+                guard !token.value.isEmpty else {
+                    errors.append(CESRError(type: .emptyStringLiteral, at: token.line))
+                    break
+                }
+                switch context {
                 case .adding(let complexOperationStep):
                     guard complexOperationStep == .deploy else {
                         break
@@ -52,23 +63,29 @@ struct CESRAnalyser {
                 default:
                     break
                 }
+            case .unknown:
+                errors.append(CESRError(type: .unknownSymbol(token.value), at: token.line))
             default:
                 break
             }
             
-            if token.kind == .unknown {
-                errors.append(CESRError(type: .unknownSymbol(token.value), at: token.line))
-            }
-            
             let nextToken = tokens[index + 1]
             
-            if let nextExpectedTokens = token.nextFlexibleExpectations(during: step) {
+            if let nextExpectedTokens = token.nextFlexibleExpectations(during: context) {
                 if !nextExpectedTokens.contains(nextToken.kind) {
-                    errors.append(CESRError(type: .unexpectedToken(expectedTokens: Array(nextExpectedTokens), foundToken: nextToken), at: nextToken.line))
+                    if context == .break {
+                        errors.append(CESRError(type: .unwelcomeToken(nextToken), at: nextToken.line))
+                    } else if token.kind == .semicolon {
+                        errors.append(CESRError(type: .expectedOperationOrEnd(foundToken: nextToken), at: token.line))
+                    } else if nextExpectedTokens.count == 1 && nextExpectedTokens.first! == .semicolon {
+                        errors.append(CESRError(type: .expectedSemicolon, at: token.line))
+                    } else {
+                        errors.append(CESRError(type: .unexpectedToken(expectedTokens: Array(nextExpectedTokens), foundToken: nextToken), at: token.line))
+                    }
                 }
+            } else {
+                // errors.append(CESRError(type: .unwelcomeToken(nextToken), at: nextToken.line))
             }
-            
-            step.update(for: nextToken)
         }
         
         return errors

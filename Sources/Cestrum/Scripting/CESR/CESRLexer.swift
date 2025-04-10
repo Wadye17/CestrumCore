@@ -12,6 +12,7 @@ final class CESRLexer {
     private let input: String
     private var position: String.Index
     private var currentLine: Int = 1
+    private var currentColumn: Int = 1
 
     init(input: String) {
         self.input = input
@@ -123,13 +124,16 @@ final class CESRLexer {
         return nil
     }
     
-    enum Phase: Equatable {
+    enum Context: Equatable {
+        case beginning
         case hooking
         case adding(ComplexOperationStep)
         case removing
         case replacing(ReplacementStep)
         case binding(ComplexOperationStep)
         case releasing(ComplexOperationStep)
+        case `break`
+        case unknown
         
         enum ComplexOperationStep: Equatable {
             case deploy
@@ -144,7 +148,7 @@ final class CESRLexer {
         var messageInterpolationDescription: String {
             switch self {
             case .hooking:
-                "hooking"
+                "hooking a configuration"
             case .adding(_):
                 "'add' operations"
             case .removing:
@@ -155,37 +159,60 @@ final class CESRLexer {
                 "'bind' operation"
             case .releasing(_):
                 "'release' operation"
+            case .beginning:
+                "<begining>"
+            case .unknown:
+                "<unknown context>"
+            case .break:
+                "<break>"
             }
         }
     }
 }
 
-extension CESRLexer.Phase {
+extension CESRLexer.Context {
     mutating func update(for token: CESRToken) {
         switch token.kind {
         case .keyword(let keyword):
             switch keyword {
             case .hook:
+                guard self == .beginning else {
+                    return
+                }
                 self = .hooking
             case .add:
                 self = .adding(.deploy)
             case .requiring:
+                guard self == .adding(.deploy) else {
+                    return
+                }
                 self = .adding(.deploymentSet)
             case .remove:
                 self = .removing
             case .replace:
                 self = .replacing(.old)
             case .with:
+                guard self == .replacing(.old) else {
+                    return
+                }
                 self = .replacing(.new)
             case .bind:
                 self = .binding(.deploy)
             case .to:
+                guard self == .binding(.deploy) else {
+                    return
+                }
                 self = .binding(.deploymentSet)
             case .release:
                 self = .releasing(.deploy)
             case .from:
+                guard self == .releasing(.deploy) else {
+                    return
+                }
                 self = .releasing(.deploymentSet)
             }
+        case .semicolon:
+            self = .break
         default:
             return
         }
