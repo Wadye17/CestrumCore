@@ -41,7 +41,7 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
     public var isTransparent: Bool {
         for line in lines {
             guard line.isTransparent else { return false }
-            return true
+            continue
         }
         return true
     }
