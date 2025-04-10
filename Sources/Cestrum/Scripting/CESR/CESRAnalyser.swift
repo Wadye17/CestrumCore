@@ -40,8 +40,6 @@ struct CESRAnalyser {
                     errors.append(CESRError(type: .invalidIdentifier(token.value), at: token.line))
                 }
             case .stringLiteral:
-                print("Found a string literal '\(token.value)'")
-                print(context)
                 guard context == .hooking || context == .adding(.deploy) || context == .replacing(.new) else {
                     break
                 }
