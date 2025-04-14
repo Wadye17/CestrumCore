@@ -8,4 +8,4 @@
 import Foundation
 
 /// Represents an instruction to perform.
-public protocol Command: CustomStringConvertible { }
+public protocol Command: Hashable, CustomStringConvertible { }

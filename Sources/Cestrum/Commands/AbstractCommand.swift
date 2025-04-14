@@ -14,13 +14,24 @@ public enum AbstractCommand: Command {
     case bind(deploymentName: String, requirementsNames: Set<String>)
     case release(deploymentName: String, otherDeploymentsNames: Set<String>)
     
-    func reflect(considering graph: DependencyGraph) {
+    func reflect(on graph: DependencyGraph) throws(RuntimeError) {
         switch self {
         case .add(let deployment, let requirements):
+            for requirementName in requirements {
+                guard graph[requirementName] != nil else {
+                    throw RuntimeError.requirementNotFound(name: requirementName, configuration: graph.namespace)
+                }
+            }
             graph.add(deployment, requirementsNames: requirements, applied: false)
         case .remove(let deploymentName):
+            guard let deployment = graph[deploymentName] else {
+                throw RuntimeError.deploymentToRemoveNotFound(name: deploymentName, configuration: graph.namespace)
+            }
             graph.removeDeployment(named: deploymentName, applied: false)
         case .replace(let oldDeploymentName, let newDeployment):
+            guard let deployment = graph[oldDeploymentName] else {
+                throw RuntimeError.deploymentToReplaceNotFound(name: oldDeploymentName, configuration: graph.namespace)
+            }
             let archivedDeployment = ArchivedDeployment(forDeploymentNamed: oldDeploymentName, in: graph)
             graph.removeDeployment(named: oldDeploymentName, applied: false)
             graph.add(newDeployment, requirementsNames: archivedDeployment.requirements, applied: false)
@@ -28,8 +39,24 @@ public enum AbstractCommand: Command {
                 graph.add(requirer --> newDeployment.name)
             }
         case .bind(let deploymentName, let requirmentsNames):
+            guard graph[deploymentName] != nil else {
+                throw RuntimeError.deploymentToBindNotFound(name: deploymentName, configuration: graph.namespace)
+            }
+            for requirementName in requirmentsNames {
+                guard graph[requirementName] != nil else {
+                    throw RuntimeError.requirementNotFound(name: requirementName, configuration: graph.namespace)
+                }
+            }
             graph.bindDeployment(named: deploymentName, toDeploymentsNamed: requirmentsNames)
         case .release(let deploymentName, let otherDeploymentNames):
+            guard graph[deploymentName] != nil else {
+                throw RuntimeError.deploymentToReleaseFound(name: deploymentName, configuration: graph.namespace)
+            }
+            for otherDeploymentName in otherDeploymentNames {
+                guard graph[otherDeploymentName] != nil else {
+                    throw RuntimeError.deploymentNotFound(name: otherDeploymentName, configuration: graph.namespace)
+                }
+            }
             graph.unbindDeployment(name: deploymentName, fromDeploymentsNamed: otherDeploymentNames)
         }
     }
@@ -55,6 +82,16 @@ public enum AbstractCommand: Command {
             true
         default:
             false
+        }
+    }
+    
+    var priority: Int8 {
+        switch self {
+            case .add(_, _): 4
+            case .remove(_): 1
+            case .replace(_, _): 5
+            case .bind(_, _): 2
+            case .release(_, _): 3
         }
     }
 }

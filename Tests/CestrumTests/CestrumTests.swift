@@ -63,7 +63,7 @@ struct GraphTests {
             .add("F", requirements: ["A"])
         ]
         
-        let concretePlan = graph.generatePlan(from: plan)
+        let concretePlan = try! graph.generateConcretePlan(from: plan)
         
         print("\nABSTRACT")
         print(plan)
@@ -103,7 +103,7 @@ struct GraphTests {
         
         print(String(data: try! JSONEncoder.default.encode(graph.createCopy()), encoding: .utf8)!)
         
-        let concretePlan = graph.generatePlan(from: plan)
+        let concretePlan = try! graph.generateConcretePlan(from: plan)
         concretePlan.apply(on: graph, onKubernetes: false)
         print(concretePlan)
         print(concretePlan.kubernetesEquivalent)
@@ -115,12 +115,14 @@ struct GraphTests {
         let code =
         """
         hook "Typical_Graph";
-        add Z "z.yaml";
         bind Z to {A, B};
+        add Z "z.yaml";
         remove C;
         replace D with ND "ND.yaml";
         add Y "path/to/manifest_of_Y.yaml";
-        bind Z to {Y};
+        bind F to {ND};
+        remove C;
+        replace A with newA "ayham.yaml";
         release A from {ND};
         """
         
@@ -133,12 +135,16 @@ struct GraphTests {
             print(">>>>>>>>>>>")
             let graph = constructTypicalGraph()
             print(graph)
-            let concretePlan = graph.generatePlan(from: abstractPlan)
-            print(concretePlan)
-            print("KUBERNETES EQUIVALENT:")
-            print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
-            concretePlan.apply(on: graph, onKubernetes: false)
-            print(graph)
+            do {
+                let concretePlan = try graph.generateConcretePlan(from: abstractPlan)
+                print(concretePlan)
+                print("KUBERNETES EQUIVALENT:")
+                print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
+                concretePlan.apply(on: graph, onKubernetes: false)
+                print(graph)
+            } catch let error {
+                print(error)
+            }
         case .failure(let errors):
             for error in errors {
                 if let line = error.line {

@@ -6,31 +6,32 @@
 //
 
 import Foundation
+import Collections
 
 public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
     typealias Content = AbstractCommand
-    public internal(set) var lines: [AbstractCommand]
+    public internal(set) var lines: OrderedSet<AbstractCommand>
     
     public init() {
         self.lines = []
     }
     
-    public init(with lines: [AbstractCommand]) {
+    public init(with lines: OrderedSet<AbstractCommand>) {
         self.lines = lines
     }
     
-    init(@AbstractPlanBuilder _ lines: () -> [AbstractCommand]) {
+    init(@AbstractPlanBuilder _ lines: () -> OrderedSet<AbstractCommand>) {
         self.lines = lines()
     }
     
     public init(arrayLiteral elements: AbstractCommand...) {
-        self.lines = elements
+        self.lines = OrderedSet(elements)
     }
     
-    func createTarget(on graph: DependencyGraph) -> DependencyGraph {
+    func createTargetGraph(from graph: DependencyGraph) throws(RuntimeError) -> DependencyGraph {
         let targetGraph = graph.createCopy()
         for line in lines {
-            line.reflect(considering: targetGraph)
+            try line.reflect(on: targetGraph)
         }
         guard !targetGraph.hasCycles else {
             fatalError("Fatal error: Target graph of '\(graph.namespace)' contains at least one cycle.\n\(targetGraph)")

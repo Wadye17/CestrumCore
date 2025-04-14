@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OrderedCollections
 
 /// The main unit for interpreting (lexing, analysing, and translating) code written in the CESR language.
 ///

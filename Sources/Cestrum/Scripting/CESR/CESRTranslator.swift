@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OrderedCollections
 
 /// A unit responsible for translating a sequence of CESR tokens into an internal representation of reconfiguration operations.
 ///
@@ -57,7 +58,74 @@ struct CESRTranslator {
         guard let graphName else {
             fatalError("Translated everything but the graph name has still not been resolved.")
         }
-        return (graphName, abstractPlan)
+        
+        let sortedLines = OrderedSet(abstractPlan.lines.sorted(by: { $0.priority > $1.priority }))
+        _ = consume abstractPlan
+        var sortedAbstractPlan = AbstractPlan(with: sortedLines)
+        var deploymentsToBeReplaced = [String : String]()
+        for (index, var line) in sortedAbstractPlan.lines.enumerated() {
+            switch line {
+            case .add(let deployment, var requirementsNames):
+                for requirementName in requirementsNames {
+                    if let replacementOfRequirement = deploymentsToBeReplaced[requirementName] {
+                        requirementsNames.remove(requirementName)
+                        requirementsNames.insert(replacementOfRequirement)
+                    }
+                }
+                line = .add(deployment, requirements: requirementsNames)
+            case .remove(let deploymentName):
+                if let replacement = deploymentsToBeReplaced[deploymentName] {
+                    line = .remove(replacement)
+                }
+            case .replace(let oldDeploymentName, let newDeployment):
+                deploymentsToBeReplaced[oldDeploymentName] = newDeployment.name
+            case .bind(let deploymentName, var requirementsNames):
+                if let replacement = deploymentsToBeReplaced[deploymentName] {
+                    for requirementName in requirementsNames {
+                        if let replacementOfRequirement = deploymentsToBeReplaced[requirementName] {
+                            requirementsNames.remove(requirementName)
+                            requirementsNames.insert(replacementOfRequirement)
+                        }
+                    }
+                    sortedAbstractPlan.lines.remove(line)
+                    line = .bind(deploymentName: replacement, requirementsNames: requirementsNames)
+                    sortedAbstractPlan.lines.insert(line, at: index)
+                } else {
+                    for requirementName in requirementsNames {
+                        if let replacementOfRequirement = deploymentsToBeReplaced[requirementName] {
+                            requirementsNames.remove(requirementName)
+                            requirementsNames.insert(replacementOfRequirement)
+                        }
+                    }
+                    sortedAbstractPlan.lines.remove(line)
+                    line = .bind(deploymentName: deploymentName, requirementsNames: requirementsNames)
+                    sortedAbstractPlan.lines.insert(line, at: index)
+                }
+            case .release(let deploymentName, var otherDeploymentsNames):
+                if let replacement = deploymentsToBeReplaced[deploymentName] {
+                    for otherDeploymentName in otherDeploymentsNames {
+                        if let replacementOfOtherDeployment = deploymentsToBeReplaced[otherDeploymentName] {
+                            otherDeploymentsNames.remove(otherDeploymentName)
+                            otherDeploymentsNames.insert(replacementOfOtherDeployment)
+                        }
+                    }
+                    sortedAbstractPlan.lines.remove(line)
+                    line = .release(deploymentName: replacement, otherDeploymentsNames: otherDeploymentsNames)
+                    sortedAbstractPlan.lines.insert(line, at: index)
+                } else {
+                    for otherDeploymentName in otherDeploymentsNames {
+                        if let replacementOfOtherDeployment = deploymentsToBeReplaced[otherDeploymentName] {
+                            otherDeploymentsNames.remove(otherDeploymentName)
+                            otherDeploymentsNames.insert(replacementOfOtherDeployment)
+                        }
+                    }
+                    sortedAbstractPlan.lines.remove(line)
+                    line = .release(deploymentName: deploymentName, otherDeploymentsNames: otherDeploymentsNames)
+                    sortedAbstractPlan.lines.insert(line, at: index)
+                }
+            }
+        }
+        return (graphName, sortedAbstractPlan)
     }
     
     func sliceTokens(_ tokens: [CESRToken]) -> [[CESRToken]] {

@@ -6,10 +6,11 @@
 //
 
 import Foundation
+import Collections
 
 protocol Plan: CustomStringConvertible {
     associatedtype Content: Command
-    var lines: [Content] { get set }
+    var lines: OrderedSet<Content> { get set }
     @discardableResult mutating func add(_ line: Content) -> Self
     @discardableResult mutating func add(_ lines: [Content]) -> Self
 }

@@ -6,11 +6,12 @@
 //
 
 import Foundation
+import Collections
 
 public final class ConcretePlan: Plan {
     typealias Content = AtomicCommand
     
-    public internal(set) var lines: [AtomicCommand]
+    public internal(set) var lines: OrderedSet<AtomicCommand>
     let initialGraph: DependencyGraph
     var targetGraph: DependencyGraph
     
