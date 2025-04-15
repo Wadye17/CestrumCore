@@ -56,7 +56,7 @@ struct CESRTranslator {
             }
         }
         guard let graphName else {
-            fatalError("Translated everything but the graph name has still not been resolved.")
+            fatalError("Translated everything, but the graph name has still not been resolved")
         }
         
         let sortedLines = OrderedSet(abstractPlan.lines.sorted(by: { $0.priority > $1.priority }))
@@ -188,5 +188,24 @@ struct CESRTranslator {
         return requirements
     }
 
+    struct Replacement: Hashable {
+        let old: String
+        let new: String
+    }
+}
 
+extension Set where Element == CESRTranslator.Replacement {
+    func old(of name: String) -> String? {
+        return self.first(where: { $0.new == name })?.old
+    }
+    
+    func new(of name: String) -> String? {
+        return self.first(where: { $0.old == name })?.new
+    }
+}
+
+extension Dictionary where Value: Equatable {
+    func someKey(forValue val: Value) -> Key? {
+        return first(where: { $1 == val })?.key
+    }
 }

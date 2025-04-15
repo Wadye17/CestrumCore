@@ -1,6 +1,6 @@
 //
 //  StringProtocol+Capitalised.swift
-//  CestrumCore
+//  Cestrum
 //
 //  Created by Wadÿe on 10/04/2025.
 //

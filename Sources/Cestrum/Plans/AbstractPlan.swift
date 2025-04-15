@@ -34,7 +34,7 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
             try line.reflect(on: targetGraph)
         }
         guard !targetGraph.hasCycles else {
-            fatalError("Fatal error: Target graph of '\(graph.namespace)' contains at least one cycle.\n\(targetGraph)")
+            throw RuntimeError.targetConfigurationGraphContainsCycles(configuration: graph.namespace)
         }
         return targetGraph
     }

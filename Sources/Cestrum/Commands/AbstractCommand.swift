@@ -17,6 +17,9 @@ public enum AbstractCommand: Command {
     func reflect(on graph: DependencyGraph) throws(RuntimeError) {
         switch self {
         case .add(let deployment, let requirements):
+            guard graph[deployment.name] == nil else {
+                throw RuntimeError.deploymentToAddAlreadyExists(name: deployment.name, configuration: graph.namespace)
+            }
             for requirementName in requirements {
                 guard graph[requirementName] != nil else {
                     throw RuntimeError.requirementNotFound(name: requirementName, configuration: graph.namespace)
@@ -24,12 +27,12 @@ public enum AbstractCommand: Command {
             }
             graph.add(deployment, requirementsNames: requirements, applied: false)
         case .remove(let deploymentName):
-            guard let deployment = graph[deploymentName] else {
+            guard let _ = graph[deploymentName] else {
                 throw RuntimeError.deploymentToRemoveNotFound(name: deploymentName, configuration: graph.namespace)
             }
             graph.removeDeployment(named: deploymentName, applied: false)
         case .replace(let oldDeploymentName, let newDeployment):
-            guard let deployment = graph[oldDeploymentName] else {
+            guard let _ = graph[oldDeploymentName] else {
                 throw RuntimeError.deploymentToReplaceNotFound(name: oldDeploymentName, configuration: graph.namespace)
             }
             let archivedDeployment = ArchivedDeployment(forDeploymentNamed: oldDeploymentName, in: graph)
