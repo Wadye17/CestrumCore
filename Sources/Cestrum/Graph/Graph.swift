@@ -172,7 +172,6 @@ public final class DependencyGraph: DeepCopyable {
     
     public func generateConcretePlan(from abstractPlan: AbstractPlan) throws(RuntimeError) -> ConcretePlan {
         let targetGraph = try abstractPlan.createTargetGraph(from: self)
-        targetGraph.checkForCycles()
         let concretePlan = ConcretePlan(from: self, to: targetGraph)
         return concretePlan
     }

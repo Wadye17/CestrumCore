@@ -15,7 +15,6 @@ public struct ArchivedDeployment {
     
     public init(for deployment: Deployment, in graph: DependencyGraph) {
         self.deployment = graph.checkPresence(of: deployment)
-        graph.checkForCycles()
         self.requirements = Set(deployment.requirements(in: graph).map(\.name))
         self.requirers = Set(deployment.requirers(in: graph).map(\.name))
     }
