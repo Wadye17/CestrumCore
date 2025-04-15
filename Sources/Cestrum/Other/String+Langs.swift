@@ -12,7 +12,7 @@ extension String {
         // Check if the string is empty
         guard !self.isEmpty else { return false }
         
-        if self == "_" {
+        if self == "_" || self == "-" {
             return false
         }
 
@@ -22,7 +22,7 @@ extension String {
         }
 
         // Ensure it contains only letters, numbers, and underscores
-        let validCharacterSet = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
+        let validCharacterSet = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-"))
         if self.rangeOfCharacter(from: validCharacterSet.inverted) != nil {
             return false
         }
