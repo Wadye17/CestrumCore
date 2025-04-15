@@ -164,7 +164,7 @@ public final class DependencyGraph: DeepCopyable {
     
     /// Starts all the deployments with respect to this dependency graph.
     func boot() {
-        self.checkForCycles()
+        self.fatalCheckForCycles()
         for deployment in deployments {
             deployment.start(considering: self)
         }

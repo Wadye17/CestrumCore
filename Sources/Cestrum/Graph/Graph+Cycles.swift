@@ -9,7 +9,7 @@ import Foundation
 
 extension DependencyGraph {
     /// Crashes the programme if this dependency graph contains at least a cycle.
-    public func checkForCycles() {
+    public func fatalCheckForCycles() {
         guard !self.hasCycles else {
             fatalError("Fatal error: Graph \(self.namespace) exhibits at least one cycle; crashed the process because this should not happen")
         }

@@ -70,7 +70,7 @@ public final class ConcretePlan: Plan {
         // syncing all dependencies (even those newly introduced)
         intermediateGraph.dependencies = targetGraph.dependencies
         
-        intermediateGraph.checkForCycles()
+        intermediateGraph.fatalCheckForCycles()
         
         // startup operations of those left unstarted (those who no longer depend on others.)
         for deployment in intermediateGraph.deployments where deployment.status == .stopped {
