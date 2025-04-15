@@ -89,8 +89,8 @@ final class CESRLexer {
     private func identifierOrKeywordToken() -> CESRToken {
         var value = ""
 
-        // Allow letters, numbers, and underscores in identifiers
-        while position < input.endIndex, input[position].isLetter || input[position].isNumber || input[position] == "_" {
+        // Allow letters, numbers, and underscores in identifiers...
+        while position < input.endIndex, input[position].isLetter || input[position].isNumber || input[position] == "_" || input[position] == "-" {
             value.append(input[position])
             advance()
         }
@@ -102,7 +102,7 @@ final class CESRLexer {
     }
 
     private func stringLiteralToken(line: Int, errors: inout [CESRError]) -> CESRToken? {
-        advance() // Skip the opening quote
+        advance() // Skip the opening quote...
         var value = ""
         
         while position < input.endIndex {

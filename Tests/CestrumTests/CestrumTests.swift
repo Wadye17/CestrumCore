@@ -122,7 +122,7 @@ struct GraphTests {
         add Y "path/to/manifest_of_Y.yaml";
         bind F to {ND};
         remove C;
-        replace A with newA "ayham.yaml";
+        replace A with newA-A "ayham.yaml";
         release A from {ND};
         """
         
