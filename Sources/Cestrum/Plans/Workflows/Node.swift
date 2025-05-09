@@ -120,7 +120,7 @@ final class Node: @unchecked Sendable {
             for successor in self.outgoingNodes {
                 taskGroup.addTask {
                     await successor.receiveTokens(1, from: self)
-                    await successor.run()
+                    await successor.run(forTesting: forTesting, stdout: stdout, stderr: stderr)
                 }
             }
         }
