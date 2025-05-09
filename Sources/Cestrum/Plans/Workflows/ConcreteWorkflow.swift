@@ -12,12 +12,20 @@ public struct ConcreteWorkflow {
     private(set) var nodes: NodeSet
     private(set) var flows: FlowSet
     
-    init(nodes: NodeSet, flows: FlowSet) {
+    let initialGraph: DependencyGraph?
+    let targetGraph: DependencyGraph?
+    
+    init(nodes: NodeSet, flows: FlowSet, initialGraph: DependencyGraph? = nil, targetGraph: DependencyGraph? = nil) {
         self.nodes = nodes
         self.flows = flows
+        self.initialGraph = initialGraph
+        self.targetGraph = targetGraph
     }
     
     init(nodes: NodeSet, naiveFlows: FlowSet) {
+        self.initialGraph = nil
+        self.targetGraph = nil
+        
         self.nodes = NodeSet()
             .union(nodes)
             .union(naiveFlows.allElements)
@@ -77,6 +85,94 @@ public struct ConcreteWorkflow {
         self.flows = []
         self.calculateFlows()
         self.nodes.formUnion(flows.allElements)
+    }
+    
+    public init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
+        let intermediateGraph = initialGraph.createCopy()
+        
+        var neighbouredCommands: Set<NeighbouredCommand> = []
+        
+        let deploymentsToRemove = intermediateGraph.deployments.subtracting(targetGraph.deployments)
+        var deploymentsToStop: Set<Deployment> = []
+        
+        for deploymentToRemove in deploymentsToRemove {
+            deploymentsToStop.insert(deploymentToRemove)
+            deploymentsToStop.formUnion(deploymentToRemove.globalRequirers(in: intermediateGraph))
+        }
+        
+        // print("All deployments to stop:\n\(deploymentsToStop)")
+        
+        var stopNeighbouredCommands = Set<NeighbouredCommand>()
+        
+        // stop workflow
+        for deploymentToStop in deploymentsToStop {
+            let requirers = deploymentToStop.requirers(in: intermediateGraph)
+            let predecessors = Set(requirers.map { AtomicCommand.stop($0, intermediateGraph) })
+            
+            let requirementsToStop = deploymentToStop.requirements(in: intermediateGraph).filter { deploymentsToStop.contains($0) }
+            let successors = Set(requirementsToStop.map { AtomicCommand.stop($0, intermediateGraph) })
+            
+            let neighbouredCommand = NeighbouredCommand(content: .stop(deploymentToStop, intermediateGraph), predecessors: predecessors, sucessors: successors)
+            stopNeighbouredCommands.insert(neighbouredCommand)
+            // print("New neighboured stop command added:\n\(neighbouredCommand)")
+        }
+        
+        neighbouredCommands.formUnion(stopNeighbouredCommands)
+        
+        let deploymentsToAdd = targetGraph.deployments.subtracting(initialGraph.deployments)
+        let deploymentsToStart = deploymentsToAdd.union(deploymentsToStop).filter { targetGraph.contains($0) }
+        
+        var startNeighbouredCommands: Set<NeighbouredCommand> = []
+        
+        // startup workflow
+        for deploymentToStart in deploymentsToStart {
+            let requirementsToStart = deploymentToStart.requirements(in: targetGraph).filter { deploymentsToStop.contains($0) || deploymentsToAdd.contains($0) }
+            let predecessors = Set(requirementsToStart.map { AtomicCommand.start($0, targetGraph) })
+            
+            let requirers = deploymentToStart.requirers(in: targetGraph)
+            let successors = Set(requirers.map { AtomicCommand.start($0, targetGraph) })
+            
+            let neighbouredCommand = NeighbouredCommand(content: .start(deploymentToStart, intermediateGraph), predecessors: predecessors, sucessors: successors)
+            startNeighbouredCommands.insert(neighbouredCommand)
+        }
+        
+        neighbouredCommands.formUnion(startNeighbouredCommands)
+        
+        let removalNeighbouredCommands = Set(deploymentsToRemove.map { NeighbouredCommand(.remove($0, intermediateGraph))})
+        neighbouredCommands.formUnion(removalNeighbouredCommands)
+        
+        let additionNeighbouredCommands = Set(deploymentsToAdd.map { NeighbouredCommand(.add($0, intermediateGraph)) })
+        neighbouredCommands.formUnion(additionNeighbouredCommands)
+        
+        let (stopFlows, stopNodes) = FlowSet.create(from: stopNeighbouredCommands)
+        
+        var stopConcreteWorkflow = ConcreteWorkflow(nodes: stopNodes, naiveFlows: stopFlows)
+        stopConcreteWorkflow.groupBothEnds()
+        
+        let (removeFlows, removeNodes) = FlowSet.create(from: removalNeighbouredCommands)
+        
+        var removalConcreteWorkflow = ConcreteWorkflow(nodes: removeNodes, naiveFlows: removeFlows)
+        removalConcreteWorkflow.groupBothEnds()
+        
+        let (addFlows, addNodes) = FlowSet.create(from: additionNeighbouredCommands)
+        
+        var additionConcreteWorkflow = ConcreteWorkflow(nodes: addNodes, naiveFlows: addFlows)
+        additionConcreteWorkflow.groupBothEnds()
+        
+        let (startFlows, startNodes) = FlowSet.create(from: startNeighbouredCommands)
+        
+        var startConcreteWorkflow = ConcreteWorkflow(nodes: startNodes, naiveFlows: startFlows)
+        startConcreteWorkflow.groupBothEnds()
+        
+        var finalWorkflow = stopConcreteWorkflow.linking(to: removalConcreteWorkflow)!.linking(to: additionConcreteWorkflow)!.linking(to: startConcreteWorkflow)!
+        finalWorkflow.wrap()
+        finalWorkflow.calculateFlows()
+        
+        self.init(nodes: finalWorkflow.nodes, flows: finalWorkflow.flows, initialGraph: initialGraph, targetGraph: targetGraph)
+        
+        if !self.isCompliant {
+            print("[CestrumCore:Warning] The constructed concrete workflow is not compliant with the BPMN standard, therefore, it cannot be run; this should not really happen, so please contact the developer")
+        }
     }
     
     private mutating func calculateFlows() {
@@ -171,7 +267,6 @@ public struct ConcreteWorkflow {
         
         self.nodes.insert(initialNode)
         self.nodes.insert(finalNode)
-        
         calculateFlows()
     }
     
@@ -209,7 +304,7 @@ public struct ConcreteWorkflow {
     
     /// Runs the workflow asynchronously (requires macOS 13 or later).
     @available(macOS 13.0, *)
-    public func run(forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async throws {
+    public func run(on graph: DependencyGraph, forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async throws {
         guard initialNodes.count == 1,
               let initialNode = initialNodes.first,
               initialNode.content.isEvent(specifically: .initial) else {
@@ -223,6 +318,13 @@ public struct ConcreteWorkflow {
         
         await initialNode.receiveTokens(1)
         await initialNode.run(forTesting: forTesting, stdout: stdout, stderr: stderr)
+        
+        guard let targetGraph, self.initialGraph != nil else {
+            fatalError("No initial or target graph were given; this shouldn't happen")
+        }
+        
+        graph.deployments = targetGraph.deployments
+        graph.dependencies = targetGraph.dependencies
     }
 }
 
@@ -264,95 +366,5 @@ extension ConcreteWorkflow: TranslatableIntoDOT {
         translation.addNewLine("}", indented: false)
         
         return translation
-    }
-}
-
-extension ConcreteWorkflow {
-    public init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
-        let intermediateGraph = initialGraph.createCopy()
-        
-        var neighbouredCommands: Set<NeighbouredCommand> = []
-        
-        let deploymentsToRemove = intermediateGraph.deployments.subtracting(targetGraph.deployments)
-        var deploymentsToStop: Set<Deployment> = []
-        
-        for deploymentToRemove in deploymentsToRemove {
-            deploymentsToStop.insert(deploymentToRemove)
-            deploymentsToStop.formUnion(deploymentToRemove.globalRequirers(in: intermediateGraph))
-        }
-        
-        // print("All deployments to stop:\n\(deploymentsToStop)")
-        
-        var stopNeighbouredCommands = Set<NeighbouredCommand>()
-        
-        // stop workflow
-        for deploymentToStop in deploymentsToStop {
-            let requirers = deploymentToStop.requirers(in: intermediateGraph)
-            let predecessors = Set(requirers.map { AtomicCommand.stop($0, intermediateGraph) })
-            
-            let requirementsToStop = deploymentToStop.requirements(in: intermediateGraph).filter { deploymentsToStop.contains($0) }
-            let successors = Set(requirementsToStop.map { AtomicCommand.stop($0, intermediateGraph) })
-            
-            let neighbouredCommand = NeighbouredCommand(content: .stop(deploymentToStop, intermediateGraph), predecessors: predecessors, sucessors: successors)
-            stopNeighbouredCommands.insert(neighbouredCommand)
-            // print("New neighboured stop command added:\n\(neighbouredCommand)")
-        }
-        
-        neighbouredCommands.formUnion(stopNeighbouredCommands)
-        
-        let deploymentsToAdd = targetGraph.deployments.subtracting(initialGraph.deployments)
-        let deploymentsToStart = deploymentsToAdd.union(deploymentsToStop).filter { targetGraph.contains($0) }
-        
-        var startNeighbouredCommands: Set<NeighbouredCommand> = []
-        
-        // startup workflow
-        for deploymentToStart in deploymentsToStart {
-            let requirementsToStart = deploymentToStart.requirements(in: targetGraph).filter { deploymentsToStop.contains($0) || deploymentsToAdd.contains($0) }
-            let predecessors = Set(requirementsToStart.map { AtomicCommand.start($0, targetGraph) })
-            
-            let requirers = deploymentToStart.requirers(in: targetGraph)
-            let successors = Set(requirers.map { AtomicCommand.start($0, targetGraph) })
-            
-            let neighbouredCommand = NeighbouredCommand(content: .start(deploymentToStart, intermediateGraph), predecessors: predecessors, sucessors: successors)
-            startNeighbouredCommands.insert(neighbouredCommand)
-        }
-        
-        neighbouredCommands.formUnion(startNeighbouredCommands)
-        
-        let removalNeighbouredCommands = Set(deploymentsToRemove.map { NeighbouredCommand(.remove($0, intermediateGraph))})
-        neighbouredCommands.formUnion(removalNeighbouredCommands)
-        
-        let additionNeighbouredCommands = Set(deploymentsToAdd.map { NeighbouredCommand(.add($0, intermediateGraph)) })
-        neighbouredCommands.formUnion(additionNeighbouredCommands)
-        
-        let (stopFlows, stopNodes) = FlowSet.create(from: stopNeighbouredCommands)
-        
-        var stopConcreteWorkflow = ConcreteWorkflow(nodes: stopNodes, naiveFlows: stopFlows)
-        stopConcreteWorkflow.groupBothEnds()
-        
-        let (removeFlows, removeNodes) = FlowSet.create(from: removalNeighbouredCommands)
-        
-        var removalConcreteWorkflow = ConcreteWorkflow(nodes: removeNodes, naiveFlows: removeFlows)
-        removalConcreteWorkflow.groupBothEnds()
-        
-        let (addFlows, addNodes) = FlowSet.create(from: additionNeighbouredCommands)
-        
-        var additionConcreteWorkflow = ConcreteWorkflow(nodes: addNodes, naiveFlows: addFlows)
-        additionConcreteWorkflow.groupBothEnds()
-        
-        let (startFlows, startNodes) = FlowSet.create(from: startNeighbouredCommands)
-        
-        var startConcreteWorkflow = ConcreteWorkflow(nodes: startNodes, naiveFlows: startFlows)
-        startConcreteWorkflow.groupBothEnds()
-        
-        var finalWorkflow = stopConcreteWorkflow.linking(to: removalConcreteWorkflow)!.linking(to: additionConcreteWorkflow)!.linking(to: startConcreteWorkflow)!
-        finalWorkflow.wrap()
-        finalWorkflow.calculateFlows()
-        
-        self.init(nodes: finalWorkflow.nodes, flows: finalWorkflow.flows)
-        
-        if !self.isCompliant {
-            print("[CestrumCore:Warning] The constructed concrete workflow is not compliant with the BPMN standard, therefore, it cannot be run; this should not really happen, so please contact the developer")
-        }
     }
 }
