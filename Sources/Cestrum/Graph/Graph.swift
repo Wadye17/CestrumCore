@@ -230,6 +230,12 @@ public final class DependencyGraph: DeepCopyable {
         let concretePlan = ConcretePlan(from: self, to: targetGraph)
         return concretePlan
     }
+    
+    public func generateConcreteWorkflow(from abstractPlan: AbstractPlan) throws(RuntimeError) -> ConcreteWorkflow {
+        let targetGraph = try abstractPlan.createTargetGraph(from: self)
+        let workflow = ConcreteWorkflow(initialGraph: self, targetGraph: targetGraph)
+        return workflow
+    }
 }
 
 extension DependencyGraph: CustomStringConvertible {

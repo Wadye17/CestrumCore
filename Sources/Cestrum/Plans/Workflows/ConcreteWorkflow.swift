@@ -12,7 +12,7 @@ public struct ConcreteWorkflow {
     private(set) var nodes: NodeSet
     private(set) var flows: FlowSet
     
-    internal init(nodes: NodeSet, flows: FlowSet) {
+    init(nodes: NodeSet, flows: FlowSet) {
         self.nodes = nodes
         self.flows = flows
     }
@@ -207,8 +207,9 @@ public struct ConcreteWorkflow {
         return newWorkflow
     }
     
+    /// Runs the workflow asynchronously (requires macOS 13 or later).
     @available(macOS 13.0, *)
-    func run() async throws {
+    public func run() async throws {
         guard initialNodes.count == 1,
               let initialNode = initialNodes.first,
               initialNode.content.isEvent(specifically: .initial) else {
