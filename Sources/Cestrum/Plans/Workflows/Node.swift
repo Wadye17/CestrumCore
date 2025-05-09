@@ -88,7 +88,7 @@ final class Node: @unchecked Sendable {
     }
     
     @available(macOS 13.0, *)
-    func performCommand(forTesting: Bool = false) async {
+    func performCommand(forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async {
         let (isTask, command) = self.content.isTask()
         guard let command, isTask else {
             return
@@ -99,13 +99,13 @@ final class Node: @unchecked Sendable {
             runCommand("sleep \(randomDuration)s")
             print("- Finished \(self) !")
         } else {
-            runCommand(command.kubernetesEquivalent.joined(separator: " && "))
+            runCommand(command.kubernetesEquivalent.joined(separator: " && "), stdout: stdout, stderr: stderr)
             print(command.doneString)
         }
     }
     
     @available(macOS 13.0, *)
-    func run() async {
+    func run(forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async {
         // print("Trying to run \(self)")
         guard self.canRun else {
             // print("\(self) cannot run yet... \(self.tokens)/\(self.requiredTokens)")
@@ -114,7 +114,7 @@ final class Node: @unchecked Sendable {
         
         await self.consumeTokens(1)
         
-        await self.performCommand()
+        await self.performCommand(forTesting: forTesting, stdout: stdout, stderr: stderr)
         
         await withTaskGroup(of: Void.self) { taskGroup in
             for successor in self.outgoingNodes {

@@ -209,7 +209,7 @@ public struct ConcreteWorkflow {
     
     /// Runs the workflow asynchronously (requires macOS 13 or later).
     @available(macOS 13.0, *)
-    public func run() async throws {
+    public func run(forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async throws {
         guard initialNodes.count == 1,
               let initialNode = initialNodes.first,
               initialNode.content.isEvent(specifically: .initial) else {
@@ -222,7 +222,7 @@ public struct ConcreteWorkflow {
         }
         
         await initialNode.receiveTokens(1)
-        await initialNode.run()
+        await initialNode.run(forTesting: forTesting, stdout: stdout, stderr: stderr)
     }
 }
 
