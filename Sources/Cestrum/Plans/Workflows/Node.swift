@@ -88,13 +88,18 @@ final class Node: @unchecked Sendable {
     }
     
     @available(macOS 13.0, *)
-    func performCommand() async {
-        let (isTask, _) = self.content.isTask()
-        guard isTask else {
+    func performCommand(forTesting: Bool = false) async {
+        let (isTask, command) = self.content.isTask()
+        guard let command, isTask else {
             return
         }
-        let randomDuration = UInt8.random(in: 1...5)
-        runCommand("sleep \(randomDuration)s")
+        if forTesting {
+            let randomDuration = UInt8.random(in: 1...5)
+            runCommand("sleep \(randomDuration)s")
+        } else {
+            runCommand(command.kubernetesEquivalent.joined(separator: " && "))
+            print(command.doneString)
+        }
     }
     
     @available(macOS 13.0, *)
@@ -107,9 +112,7 @@ final class Node: @unchecked Sendable {
         
         await self.consumeTokens(1)
         
-        print("- Starting \(self)...")
         await self.performCommand()
-        print("* Finished \(self) !")
         
         await withTaskGroup(of: Void.self) { taskGroup in
             for successor in self.outgoingNodes {
