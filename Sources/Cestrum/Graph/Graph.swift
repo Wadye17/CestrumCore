@@ -15,15 +15,12 @@ public final class DependencyGraph: DeepCopyable {
     var deployments: Set<Deployment>
     /// The set of dependencies.
     var dependencies: Set<Dependency>
-    /// The previous versions of this dependency graph.
-    var history: [GraphRecord]
     
     /// Creates a new instance of a dependency graph.
     public init(name: String, deployments: Set<Deployment>, dependencies: Set<Dependency>) throws {
         self.namespace = name
         self.deployments = deployments
         self.dependencies = dependencies
-        self.history = []
         try self.boot()
     }
     
