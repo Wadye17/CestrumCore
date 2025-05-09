@@ -94,8 +94,10 @@ final class Node: @unchecked Sendable {
             return
         }
         if forTesting {
+            print("- Starting \(self)...")
             let randomDuration = UInt8.random(in: 1...5)
             runCommand("sleep \(randomDuration)s")
+            print("- Finished \(self) !")
         } else {
             runCommand(command.kubernetesEquivalent.joined(separator: " && "))
             print(command.doneString)
