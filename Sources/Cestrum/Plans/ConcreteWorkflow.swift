@@ -304,7 +304,7 @@ public struct ConcreteWorkflow {
     
     /// Runs the workflow asynchronously (requires macOS 13 or later).
     @available(macOS 13.0, *)
-    public func run(on graph: DependencyGraph, forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async throws {
+    public func apply(on graph: DependencyGraph, forTesting: Bool = false, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) async throws {
         guard initialNodes.count == 1,
               let initialNode = initialNodes.first,
               initialNode.content.isEvent(specifically: .initial) else {
@@ -335,6 +335,7 @@ extension ConcreteWorkflow: TranslatableIntoDOT {
             .addingNewLine("rankdir=TB;")
             .addingNewLine("bgcolor=white;")
             .addingNewLine("nodesep=0.5;")
+            .addingNewLine("graph [dpi=300];")
         
         translation.addNewLine("// Event nodes")
         

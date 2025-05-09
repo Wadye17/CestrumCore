@@ -206,7 +206,7 @@ struct GraphTests {
         
         print(concreteWorkflow.dotTranslation)
         
-        try await concreteWorkflow.run()
+        try await concreteWorkflow.apply(on: graph)
     }
     
     @Test
@@ -236,7 +236,7 @@ struct GraphTests {
         
         print("Non-compliant nodes: \(workflow.nodes.filter({ !$0.isCompliant }))")
         
-        try await workflow.run()
+        try await workflow.apply(on: graph)
     }
     
     @Test
@@ -284,6 +284,6 @@ struct GraphTests {
         
         print(workflow.dotTranslation)
         
-        try await workflow.run()
+        try await workflow.apply(on: graph)
     }
 }
