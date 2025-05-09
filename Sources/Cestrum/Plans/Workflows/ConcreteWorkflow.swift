@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an executable BPMN workflow consisting of commands that can be run in parallel where safe.
-struct ConcreteWorkflow {
+public struct ConcreteWorkflow {
     private(set) var nodes: NodeSet
     private(set) var flows: FlowSet
     
@@ -267,7 +267,7 @@ extension ConcreteWorkflow: TranslatableIntoDOT {
 }
 
 extension ConcreteWorkflow {
-    init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
+    public init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
         let intermediateGraph = initialGraph.createCopy()
         
         var neighbouredCommands: Set<NeighbouredCommand> = []
