@@ -47,7 +47,7 @@ public enum AtomicCommand: Command, Hashable {
             ]
         case .stop(let deployment, let dependencyGraph):
             return [
-                "kubectl scale deployment client --replicas=0 -n \(dependencyGraph.namespace)",
+                "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)",
                 // "kubectl delete pod -l app=\(deployment.name) --grace-period=0 --force -n \(dependencyGraph.namespace)",
                 "kubectl wait pods --for=delete -l app=\(deployment.name) --timeout=600s -n \(dependencyGraph.namespace)"
             ]
@@ -64,6 +64,19 @@ public enum AtomicCommand: Command, Hashable {
             "started \(deployment)"
         case .stop(let deployment, _):
             "stopped \(deployment)"
+        }
+    }
+    
+    var beingDoneString: String {
+        switch self {
+        case .add(let deployment, _):
+            "adding \(deployment)..."
+        case .remove(let deployment, _):
+            "removing \(deployment)..."
+        case .start(let deployment, _):
+            "starting \(deployment)..."
+        case .stop(let deployment, _):
+            "stopping \(deployment)..."
         }
     }
     

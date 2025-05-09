@@ -97,7 +97,9 @@ public final class ConcretePlan: Plan {
         if onKubernetes {
             for line in self.lines {
                 let fullComposedCommand = line.kubernetesEquivalent.joined(separator: " && ")
+                print("\(line.beingDoneString)")
                 runCommand(fullComposedCommand, stdout: stdout, stderr: stderr)
+                print("\(line.doneString)")
             }
         }
         
