@@ -15,13 +15,16 @@ public final class DependencyGraph: DeepCopyable {
     var deployments: Set<Deployment>
     /// The set of dependencies.
     var dependencies: Set<Dependency>
+    /// The previous versions of this dependency graph.
+    var history: [GraphRecord]
     
     /// Creates a new instance of a dependency graph.
-    public init(name: String, deployments: Set<Deployment>, dependencies: Set<Dependency>) {
+    public init(name: String, deployments: Set<Deployment>, dependencies: Set<Dependency>) throws {
         self.namespace = name
         self.deployments = deployments
         self.dependencies = dependencies
-        self.boot()
+        self.history = []
+        try self.boot()
     }
     
     /// Returns the deployment having the given name; returns `nil` if not found.
@@ -98,6 +101,56 @@ public final class DependencyGraph: DeepCopyable {
         return actualRequirers
     }
     
+    /// Returns the transitive closure of requirements of the deployment with the given name.
+    ///
+    /// If A --> B, and B --> C; then the transitive requirements of A are B and C; and so on.
+    public func getTransitiveRequirements(ofDeploymentNamed name: String) -> Set<Deployment> {
+        self.fatalCheckForCycles()
+        
+        var visited = Set<String>()
+        var result = Set<Deployment>()
+        
+        func dfs(_ currentName: String) {
+            guard !visited.contains(currentName) else { return }
+            visited.insert(currentName)
+            
+            let requirers = getRequirements(ofDeploymentNamed: currentName)
+            result.formUnion(requirers)
+            
+            for requirer in requirers {
+                dfs(requirer.name)
+            }
+        }
+        
+        dfs(name)
+        return result
+    }
+    
+    /// Returns the transitive closure of requirers of the deployment with the given name.
+    ///
+    /// If A --> B, and B --> C; then the transitive requirers of C are A and B; and so on.
+    public func getTransitiveRequirers(ofDeploymentNamed name: String) -> Set<Deployment> {
+        self.fatalCheckForCycles()
+        
+        var visited = Set<String>()
+        var result = Set<Deployment>()
+        
+        func dfs(_ currentName: String) {
+            guard !visited.contains(currentName) else { return }
+            visited.insert(currentName)
+            
+            let requirers = getRequirers(ofDeploymentNamed: currentName)
+            result.formUnion(requirers)
+            
+            for requirer in requirers {
+                dfs(requirer.name)
+            }
+        }
+        
+        dfs(name)
+        return result
+    }
+    
     /// Adds the given deployment to the graph and handles its dependencies.
     public func add<C: Sequence>(_ deployment: Deployment, requirements: C = [], applied: Bool = true) where C.Element == Deployment {
         if !self.deployments.insert(deployment).inserted {
@@ -163,8 +216,10 @@ public final class DependencyGraph: DeepCopyable {
     }
     
     /// Starts all the deployments with respect to this dependency graph.
-    func boot() {
-        self.fatalCheckForCycles()
+    func boot() throws {
+        guard !self.hasCycles else {
+            throw RuntimeError.cyclicConfiguration(name: self.namespace)
+        }
         for deployment in deployments {
             deployment.start(considering: self)
         }

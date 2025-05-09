@@ -66,18 +66,46 @@ public func --> (_ source: String, _ targets: [String]) -> Set<Dependency> {
     return result
 }
 
-public func --> (_ source: Deployment, _ targets: [String]) -> Set<Dependency> {
-    var result = Set<Dependency>()
-    for target in targets {
-        result.insert(Dependency(source: source.name, target: target))
-    }
-    return result
-}
-
 public func --> (_ source: Deployment, _ targets: [Deployment]) -> Set<Dependency> {
     var result = Set<Dependency>()
     for target in targets {
         result.insert(Dependency(source: source.name, target: target.name))
+    }
+    return result
+}
+
+public func --> (_ sources: [Deployment], _ target: Deployment) -> Set<Dependency> {
+    var result = Set<Dependency>()
+    for source in sources {
+        result.insert(Dependency(source: source.name, target: target.name))
+    }
+    return result
+}
+
+public func --> (_ sources: [String], _ target: String) -> Set<Dependency> {
+    var result = Set<Dependency>()
+    for source in sources {
+        result.insert(Dependency(source: source, target: target))
+    }
+    return result
+}
+
+public func --> (_ sources: [Deployment], _ targets: [Deployment]) -> Set<Dependency> {
+    var result = Set<Dependency>()
+    for source in sources {
+        for target in targets {
+            result.insert(Dependency(source: source.name, target: target.name))
+        }
+    }
+    return result
+}
+
+public func --> (_ sources: [String], _ targets: [String]) -> Set<Dependency> {
+    var result = Set<Dependency>()
+    for source in sources {
+        for target in targets {
+            result.insert(Dependency(source: source, target: target))
+        }
     }
     return result
 }

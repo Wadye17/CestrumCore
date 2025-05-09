@@ -16,13 +16,11 @@ struct GraphTests {
         let c = Deployment("C", .stopped)
         let d = Deployment("D", .stopped)
         
-        let graph = DependencyGraph(name: "Typical_Graph", deployments: a, b, c, d) {
+        let graph = try! DependencyGraph(name: "Typical_Graph", deployments: a, b, c, d) {
             a --> c
             a --> d
             b --> d
         }
-        
-        graph.boot()
         
         return graph
     }
@@ -73,7 +71,7 @@ struct GraphTests {
     }
     
     @Test
-    func testRemovePlan() {
+    func testRemovePlan() throws {
         let a = Deployment("A")
         let b = Deployment("B")
         let c = Deployment("C")
@@ -85,7 +83,7 @@ struct GraphTests {
         let i = Deployment("I")
         let newD = Deployment("D'")
         
-        let graph = DependencyGraph(name: "Example", deployments: [a, b, c, d, g, h, i]) {
+        let graph = try DependencyGraph(name: "Example", deployments: [a, b, c, d, g, h, i]) {
             a --> [c, d]
             b --> d
             g --> h
@@ -120,7 +118,6 @@ struct GraphTests {
         remove C;
         replace D with ND "ND.yaml";
         add Y "path/to/manifest_of_Y.yaml";
-        bind F to {ND};
         remove C;
         replace A with newA-A "ayham.yaml";
         release A from {ND};
@@ -138,9 +135,6 @@ struct GraphTests {
             do {
                 let concretePlan = try graph.generateConcretePlan(from: abstractPlan)
                 print(concretePlan)
-                print("KUBERNETES EQUIVALENT:")
-                print(concretePlan.kubernetesEquivalent.joined(separator: "\n"))
-                concretePlan.apply(on: graph, onKubernetes: false)
                 print(graph)
             } catch let error {
                 print(error)
@@ -154,5 +148,142 @@ struct GraphTests {
                 }
             }
         }
+    }
+    
+    @Test
+    func testParallelPlan() throws {
+        let a = Deployment("A")
+        let b = Deployment("B")
+        let c = Deployment("C")
+        let d = Deployment("D")
+        let f = Deployment("F")
+        
+        let graph = try DependencyGraph(name: "Example", deployments: [a, b, c, d, f]) {
+            a --> c
+            b --> [c, d]
+            f --> a
+        }
+        
+        print(graph)
+        
+        let plan: AbstractPlan = [
+            .remove("C"),
+            .add("G", requirements: ["B"]),
+            .bind(deploymentName: "A", requirementsNames: ["B"])
+        ]
+        
+        let sequentialConcretePlan = try graph.generateConcretePlan(from: plan)
+        
+        print(sequentialConcretePlan)
+        
+        let targetGraph = try plan.createTargetGraph(from: graph)
+        
+        let workflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
+        print(workflow.dotTranslation)
+    }
+    
+    @Test
+    func testWorkflowConstructionAndExecution() async throws {
+        let a = Deployment("A"); let c = Deployment("C")
+        let b = Deployment("B"); let d = Deployment("D")
+        let e = Deployment("E"); let f = Deployment("F")
+        let g = Deployment("G")
+        
+        let graph = try DependencyGraph(name: "Graph", deployments: [a, b, c, d, e, f, g]) {
+            a --> b
+            e --> b
+            b --> [f, c]
+            c --> d
+            g --> f
+        }
+        
+        let formula: AbstractPlan = [
+            .replace(oldDeploymentName: "F", newDeployment: "newF")
+        ]
+        
+        let targetGraph = try formula.createTargetGraph(from: graph)
+        let concreteWorkflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
+        
+        print(concreteWorkflow.dotTranslation)
+        
+        try await concreteWorkflow.run()
+    }
+    
+    @Test
+    func testWorkflowRepair() async throws {
+        let a = Deployment("A"); let b = Deployment("B");
+        let c = Deployment("C"); let d = Deployment("D");
+        let e = Deployment("E");
+        
+        let graph = try DependencyGraph(name: "graph", deployments: a, b, c, d, e) {
+            a --> [b, c]
+            b --> [d, e]
+            c --> e
+        }
+        
+        graph.fatalCheckForCycles()
+        
+        let formula: AbstractPlan = [
+            .replace(oldDeploymentName: "E", newDeployment: "newE"),
+            .replace(oldDeploymentName: "D", newDeployment: "newD")
+        ]
+        
+        let targetGraph = try formula.createTargetGraph(from: graph)
+        
+        let workflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
+        
+        print(workflow.dotTranslation)
+        
+        print("Non-compliant nodes: \(workflow.nodes.filter({ !$0.isCompliant }))")
+        
+        try await workflow.run()
+    }
+    
+    @Test
+    func testComplexWorkflowConstruction() async throws {
+        let a = Deployment("A"); let b = Deployment("B");
+        let c = Deployment("C"); let d = Deployment("D");
+        let e = Deployment("E"); let f = Deployment("F");
+        let g = Deployment("G"); let h = Deployment("H");
+        let j = Deployment("J"); // let k = Deployment("K");
+        let l = Deployment("L"); let m = Deployment("M");
+        let n = Deployment("N");
+        
+        let graph = try DependencyGraph(name: "my_config", deployments: a, b, c, d, e, f, g, h, j, l, m, n) {
+            [a, b, c, d, e] --> g
+            e --> [b, c]
+            [c, f] --> d
+            f --> c
+            h --> a
+            g --> [l, m]
+            a --> n
+        }
+        
+        let code =
+        """
+        hook "my_config";
+        replace G with newG "newG.yaml";
+        remove H;
+        bind K to {E, F};
+        replace J with newJ "newJ.yml";
+        add K "k.yaml";
+        """
+        
+        let result = CESRInterpreter.interpret(code: code)
+        
+        guard case .success(let interpretationContent) = result else {
+            print("Interpretation failed")
+            return
+        }
+        
+        let formulaFromCode = interpretationContent.abstractPlan
+        
+        let targetGraph = try formulaFromCode.createTargetGraph(from: graph)
+        
+        let workflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
+        
+        print(workflow.dotTranslation)
+        
+        try await workflow.run()
     }
 }

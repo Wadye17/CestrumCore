@@ -8,7 +8,7 @@
 import Foundation
 
 /// Describes the state of a deployment.
-public enum Status: Int, Codable {
+public enum Status: Int, Codable, Sendable {
     /// The deployment is not operational.
     case stopped
     /// The deployment is up and running.

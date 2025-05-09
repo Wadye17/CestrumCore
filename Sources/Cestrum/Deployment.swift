@@ -123,6 +123,14 @@ public final class Deployment: Codable {
     func requirers(in graph: DependencyGraph) -> Set<Deployment> {
         return graph.getRequirers(ofDeploymentNamed: self.name)
     }
+    
+    func globalRequirements(in graph: DependencyGraph) -> Set<Deployment> {
+        return graph.getTransitiveRequirements(ofDeploymentNamed: self.name)
+    }
+    
+    func globalRequirers(in graph: DependencyGraph) -> Set<Deployment> {
+        return graph.getTransitiveRequirers(ofDeploymentNamed: self.name)
+    }
 }
 
 extension Deployment: Hashable {

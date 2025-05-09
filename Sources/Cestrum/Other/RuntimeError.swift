@@ -9,6 +9,7 @@ import Foundation
 
 /// Represents an error that can be thrown at runtime (generation of a target graph, synchronisation, etc...).
 public enum RuntimeError: Error, CustomStringConvertible {
+    case cyclicConfiguration(name: String)
     case deploymentNotFound(name: String, configuration: String)
     case deploymentToAddAlreadyExists(name: String, configuration: String)
     case deploymentToRemoveNotFound(name: String, configuration: String)
@@ -17,10 +18,13 @@ public enum RuntimeError: Error, CustomStringConvertible {
     case deploymentToReleaseFound(name: String, configuration: String)
     case requirementNotFound(name: String, configuration: String)
     case targetConfigurationGraphContainsCycles(configuration: String)
+    case nonCompliantConcreteWorkflow
     case unknown
     
     public var description: String {
         switch self {
+        case .cyclicConfiguration(let name):
+            "The dependency graph representing configuration '\(name)' exhibits at least one cycle; configurations must be acyclic graphs"
         case .deploymentNotFound(let name, let configuration):
             "Deployment '\(name)' does not exist in configuration '\(configuration)'"
         case .deploymentToAddAlreadyExists(let name, let configuration):
@@ -37,6 +41,8 @@ public enum RuntimeError: Error, CustomStringConvertible {
             "Required deployment '\(name)' does not exist in configuration '\(configuration)'"
         case .targetConfigurationGraphContainsCycles:
             "The reconfiguration can neither be planned nor applied because the target configuration would contain cycles; configurations must be asyclic"
+        case .nonCompliantConcreteWorkflow:
+            "The constructed concrete workflow cannot be run because it is not compliant with the BPMN standard"
         case .unknown:
             "An unknown runtime error has occured; please contact the developer"
         }

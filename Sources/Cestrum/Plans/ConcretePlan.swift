@@ -14,6 +14,7 @@ public final class ConcretePlan: Plan {
     public internal(set) var lines: OrderedSet<AtomicCommand>
     let initialGraph: DependencyGraph
     var targetGraph: DependencyGraph
+    var hasAlreadyBeenApplied: Bool = false
     
     init(from initialGraph: DependencyGraph, to targetGraph: DependencyGraph) {
         self.lines = []
@@ -81,6 +82,7 @@ public final class ConcretePlan: Plan {
         self.lines.append(contentsOf: startActions)
     }
     
+    /// The K8s command equivalent this concrete plan.
     public var kubernetesEquivalent: [String] {
         var result = [String]()
         for line in lines {
@@ -90,14 +92,12 @@ public final class ConcretePlan: Plan {
         return result
     }
     
-    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError, timeInterval: UInt32 = 3) {
+    /// Applies this reconfiguration plan.
+    public func apply(on graph: DependencyGraph, onKubernetes: Bool = true, stdout: FileHandle? = .standardOutput, stderr: FileHandle? = .standardError) {
         if onKubernetes {
-            for line in lines {
-                for command in line.kubernetesEquivalent {
-                    runCommand(command)
-                    do { sleep(timeInterval) }
-                }
-                print("[Cestrum]: \(line.doneString)")
+            for line in self.lines {
+                let fullComposedCommand = line.kubernetesEquivalent.joined(separator: " && ")
+                runCommand(fullComposedCommand, stdout: stdout, stderr: stderr)
             }
         }
         
