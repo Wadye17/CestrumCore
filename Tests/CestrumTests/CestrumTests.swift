@@ -284,6 +284,6 @@ struct GraphTests {
         
         print(workflow.dotTranslation)
         
-        try await workflow.apply(on: graph)
+        try await workflow.apply(on: graph, forTesting: true)
     }
 }

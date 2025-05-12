@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an executable BPMN workflow consisting of commands that can be run in parallel where safe.
-public struct ConcreteWorkflow {
+public final class ConcreteWorkflow {
     private(set) var nodes: NodeSet
     private(set) var flows: FlowSet
     
@@ -87,7 +87,7 @@ public struct ConcreteWorkflow {
         self.nodes.formUnion(flows.allElements)
     }
     
-    public init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
+    public convenience init(initialGraph: DependencyGraph, targetGraph: DependencyGraph) {
         let intermediateGraph = initialGraph.createCopy()
         
         var neighbouredCommands: Set<NeighbouredCommand> = []
@@ -146,25 +146,41 @@ public struct ConcreteWorkflow {
         
         let (stopFlows, stopNodes) = FlowSet.create(from: stopNeighbouredCommands)
         
-        var stopConcreteWorkflow = ConcreteWorkflow(nodes: stopNodes, naiveFlows: stopFlows)
+        let stopConcreteWorkflow = ConcreteWorkflow(nodes: stopNodes, naiveFlows: stopFlows)
         stopConcreteWorkflow.groupBothEnds()
         
         let (removeFlows, removeNodes) = FlowSet.create(from: removalNeighbouredCommands)
         
-        var removalConcreteWorkflow = ConcreteWorkflow(nodes: removeNodes, naiveFlows: removeFlows)
+        let removalConcreteWorkflow = ConcreteWorkflow(nodes: removeNodes, naiveFlows: removeFlows)
         removalConcreteWorkflow.groupBothEnds()
         
         let (addFlows, addNodes) = FlowSet.create(from: additionNeighbouredCommands)
         
-        var additionConcreteWorkflow = ConcreteWorkflow(nodes: addNodes, naiveFlows: addFlows)
+        let additionConcreteWorkflow = ConcreteWorkflow(nodes: addNodes, naiveFlows: addFlows)
         additionConcreteWorkflow.groupBothEnds()
         
         let (startFlows, startNodes) = FlowSet.create(from: startNeighbouredCommands)
         
-        var startConcreteWorkflow = ConcreteWorkflow(nodes: startNodes, naiveFlows: startFlows)
+        let startConcreteWorkflow = ConcreteWorkflow(nodes: startNodes, naiveFlows: startFlows)
         startConcreteWorkflow.groupBothEnds()
         
-        var finalWorkflow = stopConcreteWorkflow.linking(to: removalConcreteWorkflow)!.linking(to: additionConcreteWorkflow)!.linking(to: startConcreteWorkflow)!
+        stopConcreteWorkflow.link(to: removalConcreteWorkflow)
+        removalConcreteWorkflow.link(to: additionConcreteWorkflow)
+        additionConcreteWorkflow.link(to: startConcreteWorkflow)
+        
+        let finalWorkflow = ConcreteWorkflow(
+            nodes:
+                stopConcreteWorkflow.nodes
+                .union(removalConcreteWorkflow.nodes)
+                .union(additionConcreteWorkflow.nodes)
+                .union(startConcreteWorkflow.nodes),
+            flows:
+                stopConcreteWorkflow.flows
+                .union(removalConcreteWorkflow.flows)
+                .union(additionConcreteWorkflow.flows)
+                .union(startConcreteWorkflow.flows)
+        )
+        
         finalWorkflow.wrap()
         finalWorkflow.calculateFlows()
         
@@ -175,7 +191,7 @@ public struct ConcreteWorkflow {
         }
     }
     
-    private mutating func calculateFlows() {
+    private func calculateFlows() {
         var result = FlowSet()
         for node in self.nodes {
             for outgoingNode in node.outgoingNodes {
@@ -206,7 +222,7 @@ public struct ConcreteWorkflow {
         return self.nodes.filter { !$0.isCompliant }
     }
     
-    mutating func groupInitialNodes() {
+    func groupInitialNodes() {
         let initialNodes = self.initialNodes
         guard initialNodes.count > 1 else {
             // print("No group can be made for only one (or no) initial node")
@@ -218,7 +234,7 @@ public struct ConcreteWorkflow {
         calculateFlows()
     }
     
-    mutating func groupFinalNodes() {
+    func groupFinalNodes() {
         let finalNodes = self.finalNodes
         guard finalNodes.count > 1 else {
             // print("No group can be made for only one (or no) final node")
@@ -232,13 +248,13 @@ public struct ConcreteWorkflow {
         calculateFlows()
     }
     
-    mutating func groupBothEnds() {
+    func groupBothEnds() {
         self.groupInitialNodes()
         self.groupFinalNodes()
     }
     
     /// Wraps the workflow, making it start with an initial event node, and end with a final event node.
-    mutating func wrap() {
+    func wrap() {
         guard initialNodes.count == 1, let firstNode = initialNodes.first else {
             print("The workflow cannot be wrapped because there are more than one 'first' nodes; please group them first")
             return
@@ -270,36 +286,44 @@ public struct ConcreteWorkflow {
         calculateFlows()
     }
     
-    func linking(to nextWorkflow: ConcreteWorkflow) -> ConcreteWorkflow? {
+    var isEmpty: Bool {
+        return self.nodes.isEmpty
+    }
+    
+    func link(to nextWorkflow: ConcreteWorkflow) {
+        guard !self.isEmpty else {
+            return
+        }
+        
         guard self.finalNodes.count == 1,
               let lastNode = self.finalNodes.first,
                 !lastNode.content.isEvent(specifically: .final)
         else {
             print("The first workflow cannot be linked the other because it ends with a final node, or has many 'last' nodes; this should not happen")
-            return nil
+            return
+        }
+        
+        guard !nextWorkflow.isEmpty else {
+            return
         }
         
         guard nextWorkflow.initialNodes.count == 1,
               let firstNode = nextWorkflow.initialNodes.first,
               !firstNode.content.isEvent(specifically: .initial) else {
             print("The other workflow cannot be linked to because it start with an initial node, or has many 'first' nodes; this should not happen")
-            return nil
+            return
         }
         
         guard self.nodes.intersection(nextWorkflow.nodes) == [] else {
             print("Found at least one shared node between the two graphs; linking cannot be done")
-            return nil
+            return
         }
         
         lastNode.link(to: firstNode)
         
-        let newNodes = self.nodes.union(nextWorkflow.nodes)
-        let newFlows = self.flows.union(nextWorkflow.flows)
+        // FIXME: THIS STILL NEEDS SOME CLEANUP
         
-        var newWorkflow = ConcreteWorkflow(nodes: newNodes, flows: newFlows)
-        newWorkflow.calculateFlows()
-        
-        return newWorkflow
+        return
     }
     
     /// Runs the workflow asynchronously (requires macOS 13 or later).
