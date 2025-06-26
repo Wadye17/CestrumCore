@@ -29,11 +29,16 @@ struct CESRTranslator {
                 graphName = instruction[1].value
             case .keyword(.add):
                 let deploymentName = instruction[1].value
-                // dont forget the YAML
                 let manifestPath = instruction[2].value
                 let newDeployment = Deployment(deploymentName, manifestPath: manifestPath)
                 let requirements = extractDeploymentSet(from: instruction)
-                abstractPlan.add(.add(newDeployment, requirements: requirements))
+                // to ensure declarativeness, we convert `add x requiring {y, z, ...}` to `add x` and `bind x to {y, z, ...}`
+                if requirements.isEmpty {
+                    abstractPlan.add(.add(newDeployment, requirements: requirements))
+                } else {
+                    abstractPlan.add(.add(newDeployment, requirements: []))
+                    abstractPlan.add(.bind(deploymentName: newDeployment.name, requirementsNames: requirements))
+                }
             case .keyword(.remove):
                 let nameOfDeploymentToRemove = instruction[1].value
                 abstractPlan.add(.remove(nameOfDeploymentToRemove))
@@ -50,7 +55,7 @@ struct CESRTranslator {
             case .keyword(.unbind):
                 let deploymentName = instruction[1].value
                 let otherDeployments = extractDeploymentSet(from: instruction)
-                abstractPlan.add(.release(deploymentName: deploymentName, otherDeploymentsNames: otherDeployments))
+                abstractPlan.add(.unbind(deploymentName: deploymentName, otherDeploymentsNames: otherDeployments))
             default:
                 print("UNEXPECTED: Unsupported line type '\(instruction)'")
             }
@@ -101,7 +106,7 @@ struct CESRTranslator {
                     line = .bind(deploymentName: deploymentName, requirementsNames: requirementsNames)
                     sortedAbstractPlan.lines.insert(line, at: index)
                 }
-            case .release(let deploymentName, var otherDeploymentsNames):
+            case .unbind(let deploymentName, var otherDeploymentsNames):
                 if let replacement = deploymentsToBeReplaced[deploymentName] {
                     for otherDeploymentName in otherDeploymentsNames {
                         if let replacementOfOtherDeployment = deploymentsToBeReplaced[otherDeploymentName] {
@@ -110,7 +115,7 @@ struct CESRTranslator {
                         }
                     }
                     sortedAbstractPlan.lines.remove(line)
-                    line = .release(deploymentName: replacement, otherDeploymentsNames: otherDeploymentsNames)
+                    line = .unbind(deploymentName: replacement, otherDeploymentsNames: otherDeploymentsNames)
                     sortedAbstractPlan.lines.insert(line, at: index)
                 } else {
                     for otherDeploymentName in otherDeploymentsNames {
@@ -120,7 +125,7 @@ struct CESRTranslator {
                         }
                     }
                     sortedAbstractPlan.lines.remove(line)
-                    line = .release(deploymentName: deploymentName, otherDeploymentsNames: otherDeploymentsNames)
+                    line = .unbind(deploymentName: deploymentName, otherDeploymentsNames: otherDeploymentsNames)
                     sortedAbstractPlan.lines.insert(line, at: index)
                 }
             }

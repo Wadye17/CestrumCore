@@ -12,7 +12,7 @@ public enum AbstractOperation: Operation {
     case remove(String)
     case replace(oldDeploymentName: String, newDeployment: Deployment)
     case bind(deploymentName: String, requirementsNames: Set<String>)
-    case release(deploymentName: String, otherDeploymentsNames: Set<String>)
+    case unbind(deploymentName: String, otherDeploymentsNames: Set<String>)
     
     func reflect(on graph: DependencyGraph) throws(RuntimeError) {
         switch self {
@@ -51,7 +51,7 @@ public enum AbstractOperation: Operation {
                 }
             }
             graph.bindDeployment(named: deploymentName, toDeploymentsNamed: requirmentsNames)
-        case .release(let deploymentName, let otherDeploymentNames):
+        case .unbind(let deploymentName, let otherDeploymentNames):
             guard graph[deploymentName] != nil else {
                 throw RuntimeError.deploymentToReleaseFound(name: deploymentName, configuration: graph.namespace)
             }
@@ -74,14 +74,14 @@ public enum AbstractOperation: Operation {
             "replace \(oldDeployment) with \(newDeployment)"
         case .bind(let deploymentName, let requirementsNames):
             "bind \(deploymentName) to {\(requirementsNames.joined(separator: ", "))}"
-        case .release(let deploymentName, let otherDeploymentsNames):
+        case .unbind(let deploymentName, let otherDeploymentsNames):
             "unbind \(deploymentName) from {\(otherDeploymentsNames.joined(separator: ", "))}"
         }
     }
     
     public var isTransparent: Bool {
         switch self {
-        case .bind, .release:
+        case .bind, .unbind:
             true
         default:
             false
@@ -94,7 +94,7 @@ public enum AbstractOperation: Operation {
             case .remove(_): 1
             case .replace(_, _): 5
             case .bind(_, _): 2
-            case .release(_, _): 3
+            case .unbind(_, _): 3
         }
     }
 }

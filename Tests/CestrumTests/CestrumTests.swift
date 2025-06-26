@@ -113,6 +113,7 @@ struct GraphTests {
         let code =
         """
         configuration "Typical_Graph";
+        add alpha "alpha.yaml" requiring {Z};
         bind Z to {A, B};
         add Z "z.yaml";
         remove C;
