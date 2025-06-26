@@ -8,10 +8,10 @@
 import Foundation
 import Collections
 
-public final class ConcretePlan: Plan {
-    typealias Content = AtomicCommand
+public final class ConcretePlan: OperationCollection {
+    typealias Content = ConcreteOperation
     
-    public internal(set) var lines: OrderedSet<AtomicCommand>
+    public internal(set) var lines: OrderedSet<ConcreteOperation>
     let initialGraph: DependencyGraph
     var targetGraph: DependencyGraph
     var hasAlreadyBeenApplied: Bool = false
@@ -26,10 +26,10 @@ public final class ConcretePlan: Plan {
     internal func synchronise() {
         let intermediateGraph = initialGraph.createCopy()
         
-        var stopActions: Array<AtomicCommand> = []
-        var removeActions: Set<AtomicCommand> = []
-        var addActions: Set<AtomicCommand> = []
-        var startActions: Array<AtomicCommand> = []
+        var stopActions: Array<ConcreteOperation> = []
+        var removeActions: Set<ConcreteOperation> = []
+        var addActions: Set<ConcreteOperation> = []
+        var startActions: Array<ConcreteOperation> = []
         
         // deployments present in the initial graph, but missing in the target graph.
         let deploymentsToRemove = intermediateGraph.deployments.subtracting(targetGraph.deployments)

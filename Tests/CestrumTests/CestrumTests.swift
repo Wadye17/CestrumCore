@@ -53,7 +53,7 @@ struct GraphTests {
         
         print("\n\(graph)")
         
-        let plan: AbstractPlan = [
+        let plan: AbstractFormula = [
             .remove("C"),
             .add("E", requirements: ["A"]),
             .replace(oldDeploymentName: "D", newDeployment: "D'"),
@@ -92,7 +92,7 @@ struct GraphTests {
         
         print(graph)
         
-        let plan: AbstractPlan = [
+        let plan: AbstractFormula = [
             .add(e, requirements: ["A"]),
             .remove("C"),
             .add(f, requirements: ["A", "B"]),
@@ -166,7 +166,7 @@ struct GraphTests {
         
         print(graph)
         
-        let plan: AbstractPlan = [
+        let plan: AbstractFormula = [
             .remove("C"),
             .add("G", requirements: ["B"]),
             .bind(deploymentName: "A", requirementsNames: ["B"])
@@ -197,7 +197,7 @@ struct GraphTests {
             g --> f
         }
         
-        let formula: AbstractPlan = [
+        let formula: AbstractFormula = [
             .replace(oldDeploymentName: "F", newDeployment: "newF")
         ]
         
@@ -223,7 +223,7 @@ struct GraphTests {
         
         graph.fatalCheckForCycles()
         
-        let formula: AbstractPlan = [
+        let formula: AbstractFormula = [
             .replace(oldDeploymentName: "E", newDeployment: "newE"),
             .replace(oldDeploymentName: "D", newDeployment: "newD")
         ]
@@ -285,5 +285,31 @@ struct GraphTests {
         print(workflow.dotTranslation)
         
         try await workflow.apply(on: graph, forTesting: true)
+    }
+    
+    @Test
+    func testPresentationExample() async throws {
+        let persistence = Deployment("persistence")
+        let backend = Deployment("backend")
+        let frontend = Deployment("frontend")
+        let notificationService = Deployment("notification-service")
+        let authService = Deployment("auth-service")
+        
+        let graph = try DependencyGraph(name: "my_config", deployments: persistence, frontend, backend, notificationService, authService) {
+            [frontend, notificationService] --> backend
+            backend --> [persistence, authService]
+            authService --> persistence
+        }
+        
+        let formula: AbstractFormula = [
+            .replace(oldDeploymentName: "backend", newDeployment: Deployment("new-backend")),
+            .replace(oldDeploymentName: "persistence", newDeployment: Deployment("new-persistence"))
+        ]
+        
+        let targetGraph = try formula.createTargetGraph(from: graph)
+        
+        let workflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
+        
+        print(workflow.dotTranslation)
     }
 }

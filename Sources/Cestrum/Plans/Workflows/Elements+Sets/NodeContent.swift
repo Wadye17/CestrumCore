@@ -9,14 +9,14 @@ import Foundation
 
 /// The possible content of a node.
 enum NodeContent: Equatable, CustomStringConvertible {
-    case task(AtomicCommand)
+    case task(ConcreteOperation)
     case initial
     case split
     case join
     case final
     
     /// Returns whether this value is a task, along with the command inside; nil otherwise.
-    func isTask() -> (true: Bool, command: AtomicCommand?) {
+    func isTask() -> (true: Bool, command: ConcreteOperation?) {
         guard case .task(let atomicCommand) = self else {
             return (false, nil)
         }

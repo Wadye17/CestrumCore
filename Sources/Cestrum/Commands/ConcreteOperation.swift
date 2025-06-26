@@ -1,5 +1,5 @@
 //
-//  AtomicCommand.swift
+//  ConcreteOperation.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 11/03/2025.
@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an instruction that can be run.
-public enum AtomicCommand: Command, Hashable {
+public enum ConcreteOperation: Operation, Hashable {
     case add(Deployment, DependencyGraph)
     case remove(Deployment, DependencyGraph)
     case start(Deployment, DependencyGraph)

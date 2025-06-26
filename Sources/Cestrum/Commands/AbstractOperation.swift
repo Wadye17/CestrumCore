@@ -1,5 +1,5 @@
 //
-//  AbstractCommand.swift
+//  AbstractOperation.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 11/03/2025.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum AbstractCommand: Command {
+public enum AbstractOperation: Operation {
     case add(Deployment, requirements: Set<String>)
     case remove(String)
     case replace(oldDeploymentName: String, newDeployment: Deployment)

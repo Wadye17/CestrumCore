@@ -19,9 +19,9 @@ struct CESRTranslator {
     }
     
     // IMPORTANT: Currently, the translator works naively; assuming the analysis was successful and the tokens are coherent (at least for now).
-    func translate() -> (graphName: String, abstractPlan: AbstractPlan) {
+    func translate() -> (graphName: String, abstractPlan: AbstractFormula) {
         var graphName: String?
-        var abstractPlan = AbstractPlan()
+        var abstractPlan = AbstractFormula()
         let instructions = sliceTokens(self.tokens)
         for instruction in instructions {
             switch instruction[0].kind {
@@ -61,7 +61,7 @@ struct CESRTranslator {
         
         let sortedLines = OrderedSet(abstractPlan.lines.sorted(by: { $0.priority > $1.priority }))
         _ = consume abstractPlan
-        var sortedAbstractPlan = AbstractPlan(with: sortedLines)
+        var sortedAbstractPlan = AbstractFormula(with: sortedLines)
         var deploymentsToBeReplaced = [String : String]()
         for (index, var line) in sortedAbstractPlan.lines.enumerated() {
             switch line {

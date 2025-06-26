@@ -9,17 +9,17 @@ import Foundation
 
 /// Represents a tuplen (triple) consisiting of the subject (command), a set of predecessor commands, and a set of successor commands. Used for representing order between commands.
 final class NeighbouredCommand: Hashable, CustomStringConvertible {
-    let content: AtomicCommand
-    let predecessors: Set<AtomicCommand>
-    let successors: Set<AtomicCommand>
+    let content: ConcreteOperation
+    let predecessors: Set<ConcreteOperation>
+    let successors: Set<ConcreteOperation>
     
-    init(_ content: AtomicCommand) {
+    init(_ content: ConcreteOperation) {
         self.content = content
         self.predecessors = []
         self.successors = []
     }
     
-    init(content: AtomicCommand, predecessors: Set<AtomicCommand>, sucessors: Set<AtomicCommand>) {
+    init(content: ConcreteOperation, predecessors: Set<ConcreteOperation>, sucessors: Set<ConcreteOperation>) {
         self.content = content
         self.predecessors = predecessors
         self.successors = sucessors
@@ -41,15 +41,15 @@ final class NeighbouredCommand: Hashable, CustomStringConvertible {
 }
 
 extension Set<NeighbouredCommand> {
-    func being(_ command: AtomicCommand) -> NeighbouredCommand? {
+    func being(_ command: ConcreteOperation) -> NeighbouredCommand? {
         self.first(where: { $0.content == command })
     }
     
-    func havingInPredecessors(_ command: AtomicCommand) -> Self {
+    func havingInPredecessors(_ command: ConcreteOperation) -> Self {
         self.filter { $0.predecessors.contains(command) }
     }
     
-    func havingInSuccessors(_ command: AtomicCommand) -> Self {
+    func havingInSuccessors(_ command: ConcreteOperation) -> Self {
         self.filter { $0.successors.contains(command) }
     }
 }

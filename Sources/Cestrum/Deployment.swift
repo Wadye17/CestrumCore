@@ -74,7 +74,7 @@ public final class Deployment: Codable {
     }
     
     /// Starts the deployment with respect to the dependency graph provided.
-    func start(considering graph: DependencyGraph, atomicPlan: inout [AtomicCommand]) {
+    func start(considering graph: DependencyGraph, atomicPlan: inout [ConcreteOperation]) {
         for requirement in self.requirements(in: graph) where requirement.status == .stopped {
             requirement.start(considering: graph, atomicPlan: &atomicPlan)
         }
@@ -98,7 +98,7 @@ public final class Deployment: Codable {
     }
     
     /// Stops the deployment with respect to the dependency graph provided.
-    func stop(considering graph: DependencyGraph, atomicPlan: inout [AtomicCommand]) {
+    func stop(considering graph: DependencyGraph, atomicPlan: inout [ConcreteOperation]) {
         for requirer in self.requirers(in: graph) where requirer.status == .started {
             requirer.stop(considering: graph, atomicPlan: &atomicPlan)
         }

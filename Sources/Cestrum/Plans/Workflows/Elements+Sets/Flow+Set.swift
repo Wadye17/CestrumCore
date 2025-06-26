@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A set of flows.
+/// A set of naive flows.
 typealias FlowSet = Set<Flow>
 
 extension FlowSet {

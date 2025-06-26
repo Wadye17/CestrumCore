@@ -55,7 +55,7 @@ public struct CESRInterpreter {
     private init() { }
     
     /// Interprets the given CESR code and returns the graph name, the internal representation of the interpreted abstract reconfiguration operations, as well as errors and warnings.
-    public static func interpret(code: String) -> Result<(graphName: String, abstractPlan: AbstractPlan), [CESRError]> {
+    public static func interpret(code: String) -> Result<(graphName: String, abstractPlan: AbstractFormula), [CESRError]> {
         let lexer = CESRLexer(input: code)
         let (tokens, lexingErrors) = lexer.tokenise()
         guard lexingErrors.isEmpty else {

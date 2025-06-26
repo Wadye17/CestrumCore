@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension Never: Command {
+extension Never: Operation {
     typealias TargetTranslationCommand = Never
     func translate(considering graph: DependencyGraph) -> Never {
         fatalError("A little birdie told me this shouldn't happen :)")

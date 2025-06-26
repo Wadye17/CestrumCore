@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Represents a—runnable—node in a BPMN.
+/// Represents a—runnable—node in BPMN.
 final class Node: @unchecked Sendable {
     let id: String = UUID().uuidString
     let content: NodeContent

@@ -1,5 +1,5 @@
 //
-//  AbstractPlan.swift
+//  AbstractFormula.swift
 //  Cestrum
 //
 //  Created by Wadÿe on 12/03/2025.
@@ -8,23 +8,23 @@
 import Foundation
 import Collections
 
-public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
-    typealias Content = AbstractCommand
-    public internal(set) var lines: OrderedSet<AbstractCommand>
+public struct AbstractFormula: OperationCollection, ExpressibleByArrayLiteral {
+    typealias Content = AbstractOperation
+    public internal(set) var lines: OrderedSet<AbstractOperation>
     
     public init() {
         self.lines = []
     }
     
-    public init(with lines: OrderedSet<AbstractCommand>) {
+    public init(with lines: OrderedSet<AbstractOperation>) {
         self.lines = lines
     }
     
-    init(@AbstractPlanBuilder _ lines: () -> OrderedSet<AbstractCommand>) {
+    init(@AbstractPlanBuilder _ lines: () -> OrderedSet<AbstractOperation>) {
         self.lines = lines()
     }
     
-    public init(arrayLiteral elements: AbstractCommand...) {
+    public init(arrayLiteral elements: AbstractOperation...) {
         self.lines = OrderedSet(elements)
     }
     
@@ -58,7 +58,7 @@ public struct AbstractPlan: Plan, ExpressibleByArrayLiteral {
 
 @resultBuilder
 struct AbstractPlanBuilder {
-    static func buildBlock(_ components: AbstractCommand...) -> [AbstractCommand] {
+    static func buildBlock(_ components: AbstractOperation...) -> [AbstractOperation] {
         return components
     }
 }

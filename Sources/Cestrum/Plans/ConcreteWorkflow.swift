@@ -107,10 +107,10 @@ public final class ConcreteWorkflow {
         // stop workflow
         for deploymentToStop in deploymentsToStop {
             let requirers = deploymentToStop.requirers(in: intermediateGraph)
-            let predecessors = Set(requirers.map { AtomicCommand.stop($0, intermediateGraph) })
+            let predecessors = Set(requirers.map { ConcreteOperation.stop($0, intermediateGraph) })
             
             let requirementsToStop = deploymentToStop.requirements(in: intermediateGraph).filter { deploymentsToStop.contains($0) }
-            let successors = Set(requirementsToStop.map { AtomicCommand.stop($0, intermediateGraph) })
+            let successors = Set(requirementsToStop.map { ConcreteOperation.stop($0, intermediateGraph) })
             
             let neighbouredCommand = NeighbouredCommand(content: .stop(deploymentToStop, intermediateGraph), predecessors: predecessors, sucessors: successors)
             stopNeighbouredCommands.insert(neighbouredCommand)
@@ -127,10 +127,10 @@ public final class ConcreteWorkflow {
         // startup workflow
         for deploymentToStart in deploymentsToStart {
             let requirementsToStart = deploymentToStart.requirements(in: targetGraph).filter { deploymentsToStop.contains($0) || deploymentsToAdd.contains($0) }
-            let predecessors = Set(requirementsToStart.map { AtomicCommand.start($0, targetGraph) })
+            let predecessors = Set(requirementsToStart.map { ConcreteOperation.start($0, targetGraph) })
             
             let requirers = deploymentToStart.requirers(in: targetGraph)
-            let successors = Set(requirers.map { AtomicCommand.start($0, targetGraph) })
+            let successors = Set(requirers.map { ConcreteOperation.start($0, targetGraph) })
             
             let neighbouredCommand = NeighbouredCommand(content: .start(deploymentToStart, intermediateGraph), predecessors: predecessors, sucessors: successors)
             startNeighbouredCommands.insert(neighbouredCommand)

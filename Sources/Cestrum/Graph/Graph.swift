@@ -222,13 +222,13 @@ public final class DependencyGraph: DeepCopyable {
         }
     }
     
-    public func generateConcretePlan(from abstractPlan: AbstractPlan) throws(RuntimeError) -> ConcretePlan {
+    public func generateConcretePlan(from abstractPlan: AbstractFormula) throws(RuntimeError) -> ConcretePlan {
         let targetGraph = try abstractPlan.createTargetGraph(from: self)
         let concretePlan = ConcretePlan(from: self, to: targetGraph)
         return concretePlan
     }
     
-    public func generateConcreteWorkflow(from abstractPlan: AbstractPlan) throws(RuntimeError) -> ConcreteWorkflow {
+    public func generateConcreteWorkflow(from abstractPlan: AbstractFormula) throws(RuntimeError) -> ConcreteWorkflow {
         let targetGraph = try abstractPlan.createTargetGraph(from: self)
         let workflow = ConcreteWorkflow(initialGraph: self, targetGraph: targetGraph)
         return workflow

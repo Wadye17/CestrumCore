@@ -11,7 +11,7 @@ import Foundation
 typealias NodeSet = Set<Node>
 
 extension NodeSet {
-    func task(having command: AtomicCommand) -> Node? {
+    func task(having command: ConcreteOperation) -> Node? {
         self.first(where: { $0.content.isTask().command?.paperValue == command.paperValue })
     }
 }
