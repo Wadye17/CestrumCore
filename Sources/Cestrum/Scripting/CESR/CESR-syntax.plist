@@ -16,7 +16,7 @@
 			<key>name</key>
 			<string>keyword.control.cesr</string>
 			<key>match</key>
-			<string>\b(hook|add|remove|replace|bind|release|requiring|from|to|with)\b</string>
+			<string>\b(configuration|add|remove|replace|bind|unbind|requiring|from|to|with)\b</string>
 		</dict>
 		<dict>
 			<key>name</key>
