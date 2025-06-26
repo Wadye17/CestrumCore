@@ -24,7 +24,7 @@ struct CESRAnalyser {
             return errors
         }
         
-        if firstToken.kind != .keyword(.hook) {
+        if firstToken.kind != .keyword(.configuration) {
             errors.append(CESRError(type: .expectedHook, at: firstToken.line))
         }
         

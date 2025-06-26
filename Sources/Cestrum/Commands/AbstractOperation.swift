@@ -75,7 +75,7 @@ public enum AbstractOperation: Operation {
         case .bind(let deploymentName, let requirementsNames):
             "bind \(deploymentName) to {\(requirementsNames.joined(separator: ", "))}"
         case .release(let deploymentName, let otherDeploymentsNames):
-            "release \(deploymentName) from {\(otherDeploymentsNames.joined(separator: ", "))}"
+            "unbind \(deploymentName) from {\(otherDeploymentsNames.joined(separator: ", "))}"
         }
     }
     

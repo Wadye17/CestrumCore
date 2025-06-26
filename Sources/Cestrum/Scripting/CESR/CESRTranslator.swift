@@ -25,7 +25,7 @@ struct CESRTranslator {
         let instructions = sliceTokens(self.tokens)
         for instruction in instructions {
             switch instruction[0].kind {
-            case .keyword(.hook):
+            case .keyword(.configuration):
                 graphName = instruction[1].value
             case .keyword(.add):
                 let deploymentName = instruction[1].value
@@ -47,7 +47,7 @@ struct CESRTranslator {
                 let deploymentName = instruction[1].value
                 let requirementsNames = extractDeploymentSet(from: instruction)
                 abstractPlan.add(.bind(deploymentName: deploymentName, requirementsNames: requirementsNames))
-            case .keyword(.release):
+            case .keyword(.unbind):
                 let deploymentName = instruction[1].value
                 let otherDeployments = extractDeploymentSet(from: instruction)
                 abstractPlan.add(.release(deploymentName: deploymentName, otherDeploymentsNames: otherDeployments))
@@ -139,7 +139,7 @@ struct CESRTranslator {
 
             // If token is a starting keyword, start a new slice
             if case .keyword(let keyword) = token.kind,
-               [.hook, .add, .remove, .replace, .bind, .release].contains(keyword) {
+               [.configuration, .add, .remove, .replace, .bind, .unbind].contains(keyword) {
                 // If we were collecting, store the previous slice
                 if !currentSlice.isEmpty {
                     slices.append(currentSlice)

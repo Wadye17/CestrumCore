@@ -35,7 +35,7 @@ final class CESRToken: Hashable, CustomStringConvertible, Sendable {
         switch self.kind {
         case .keyword(let keyword):
             switch keyword {
-            case .hook:
+            case .configuration:
                 return [.stringLiteral]
             case .add:
                 return [.identifier]
@@ -51,7 +51,7 @@ final class CESRToken: Hashable, CustomStringConvertible, Sendable {
                 return [.identifier]
             case .to:
                 return [.brace(.opening)]
-            case .release:
+            case .unbind:
                 return [.identifier]
             case .from:
                 return [.brace(.opening)]
@@ -245,7 +245,7 @@ extension CESRToken {
         }
         
         enum Keyword: String, CaseIterable {
-            case hook
+            case configuration
             case add
             case requiring
             case remove
@@ -253,11 +253,11 @@ extension CESRToken {
             case with
             case bind
             case to
-            case release
+            case unbind
             case from
             
             static var instructionKeywords: Set<Keyword> {
-                return [.add, .remove, .replace, .bind, .release]
+                return [.add, .remove, .replace, .bind, .unbind]
             }
             
             static var setIntroductorKeywords: Set<Keyword> {
@@ -266,8 +266,8 @@ extension CESRToken {
             
             init?(rawValue: String) {
                 switch rawValue {
-                case "hook":
-                    self = .hook
+                case "configuration":
+                    self = .configuration
                 case "add":
                     self = .add
                 case "requiring":
@@ -282,8 +282,8 @@ extension CESRToken {
                     self = .bind
                 case "to":
                     self = .to
-                case "release":
-                    self = .release
+                case "unbind":
+                    self = .unbind
                 case "from":
                     self = .from
                 default:

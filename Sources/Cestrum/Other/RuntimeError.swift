@@ -36,7 +36,7 @@ public enum RuntimeError: Error, CustomStringConvertible {
         case .deploymentToBindNotFound(let name, let configuration):
             "Cannot bind deployment '\(name)' because it does not exist in configuration '\(configuration)'"
         case .deploymentToReleaseFound(let name, let configuration):
-            "Cannot release deployment '\(name)' because it does not exist in configuration '\(configuration)'"
+            "Cannot unbind deployment '\(name)' because it does not exist in configuration '\(configuration)'"
         case .requirementNotFound(let name, let configuration):
             "Required deployment '\(name)' does not exist in configuration '\(configuration)'"
         case .targetConfigurationGraphContainsCycles:

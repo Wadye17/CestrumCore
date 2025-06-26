@@ -112,7 +112,7 @@ struct GraphTests {
     func testCESR() {
         let code =
         """
-        hook "Typical_Graph";
+        configuration "Typical_Graph";
         bind Z to {A, B};
         add Z "z.yaml";
         remove C;
@@ -120,7 +120,7 @@ struct GraphTests {
         add Y "path/to/manifest_of_Y.yaml";
         remove C;
         replace A with newA-A "ayham.yaml";
-        release A from {ND};
+        unbind A from {ND};
         """
         
         let interpretationResult = CESRInterpreter.interpret(code: code)
@@ -261,7 +261,7 @@ struct GraphTests {
         
         let code =
         """
-        hook "my_config";
+        configuration "my_config";
         replace G with newG "newG.yaml";
         remove H;
         bind K to {E, F};

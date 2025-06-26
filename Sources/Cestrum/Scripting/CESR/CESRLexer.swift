@@ -175,7 +175,7 @@ extension CESRLexer.Context {
         switch token.kind {
         case .keyword(let keyword):
             switch keyword {
-            case .hook:
+            case .configuration:
                 guard self == .beginning else {
                     return
                 }
@@ -203,7 +203,7 @@ extension CESRLexer.Context {
                     return
                 }
                 self = .binding(.deploymentSet)
-            case .release:
+            case .unbind:
                 self = .releasing(.deploy)
             case .from:
                 guard self == .releasing(.deploy) else {

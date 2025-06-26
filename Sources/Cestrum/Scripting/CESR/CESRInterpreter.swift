@@ -45,11 +45,11 @@ import OrderedCollections
 /// bind b to {a, c};
 /// ```
 ///
-/// The release operation removes the dependencies between one deployment and a set of deployments.
+/// The unbind operation removes the dependencies between one deployment and a set of deployments.
 /// ```
-/// release g from {e, f, h};
+/// unbind g from {e, f, h};
 /// ```
-/// - Important: When using `bind` or `release`, the set of deployments must not be empty.
+/// - Important: When using `bind` or `unbind`, the set of deployments must not be empty.
 /// - Important: A string literal containing the (absolute) file path to a manifest file must be a valid URL, and must end with the extension "yaml" or "yml".
 public struct CESRInterpreter {
     private init() { }
