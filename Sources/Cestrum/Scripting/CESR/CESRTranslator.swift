@@ -203,9 +203,3 @@ extension Set where Element == CESRTranslator.Replacement {
         return self.first(where: { $0.old == name })?.new
     }
 }
-
-extension Dictionary where Value: Equatable {
-    func someKey(forValue val: Value) -> Key? {
-        return first(where: { $1 == val })?.key
-    }
-}
