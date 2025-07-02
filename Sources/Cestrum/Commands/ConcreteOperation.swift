@@ -21,7 +21,8 @@ public enum ConcreteOperation: Operation, Hashable {
                 return [
                     "kubectl apply -f '\(manifestPath)'",
                     "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)",
-//                    "kubectl wait pods --for=delete -l app=\(deployment.name) --timeout=600s -n \(dependencyGraph.namespace)",
+                    "kubectl delete pods -l app=\(deployment.name) --grace-period=0 --force",
+                    "kubectl wait pods --for=delete -l app=\(deployment.name) --timeout=600s -n \(dependencyGraph.namespace)",
                     "kubectl wait deployment/\(deployment.name) --for=condition=Available=True --timeout=600s -n \(dependencyGraph.namespace)"
                 ]
             } else {
