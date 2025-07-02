@@ -20,7 +20,6 @@ public enum ConcreteOperation: Operation, Hashable {
             if let manifestPath = deployment.manifestPath, manifestPath != "" {
                 return [
                     "kubectl apply -f '\(manifestPath)'",
-                    "kubectl rollout pause deployment \(deployment.name)",
                     "kubectl scale deployment \(deployment.name) --replicas=0 -n \(dependencyGraph.namespace)",
                     "kubectl wait pods --for=delete -l app=\(deployment.name) --timeout=600s -n \(dependencyGraph.namespace)",
                     "kubectl wait deployment/\(deployment.name) --for=condition=Available=True --timeout=600s -n \(dependencyGraph.namespace)"
