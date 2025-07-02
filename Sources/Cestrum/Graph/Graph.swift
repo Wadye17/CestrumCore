@@ -24,6 +24,50 @@ public final class DependencyGraph: DeepCopyable {
         try self.boot()
     }
     
+    /// Returns the total number of deployments in this dependency graph.
+    public var totalDeploymentsCount: Int {
+        return self.deployments.count
+    }
+    
+    /// Returns the total number of dependencies in this dependency graph.
+    public var totalDependenciesCount: Int {
+        return self.dependencies.count
+    }
+    
+    /// Returns the total number of independent deployments in this dependency graph.
+    public var totalIndependentDeploymentsCount: Int {
+        return self.deployments.filter({ $0.requirements(in: self).isEmpty }).count
+    }
+    
+    /// Returns the maxumum depth in terms of dependencies in this dependency graph.
+    public var maximumDepth: Int {
+        return self.deployments.reduce(into: 0) { result, deployment in
+            result = max(result, deployment.requirers(in: self).count)
+        }
+    }
+    
+    /// Returns the maximum number of requirers per deployment.
+    public var maximumRequirersCount: Int {
+        return self.deployments.reduce(into: 0) { result, deployment in
+            result = max(result, deployment.requirers(in: self).count)
+        }
+    }
+    
+    /// Returns the maximum number of requirements per deployment.
+    public var maximumRequirementsCount: Int {
+        return self.deployments.reduce(into: 0) { result, deployment in
+            result = max(result, deployment.requirements(in: self).count)
+        }
+    }
+    
+    /// Returns the total number of strictly independent deployments in this dependency graph.
+    public var totalStrictlyIndependentDeploymentsCount: Int {
+        return self.deployments.filter({
+            $0.requirements(in: self).isEmpty
+            && !$0.requirers(in: self).isEmpty
+        }).count
+    }
+    
     /// Returns the deployment having the given name; returns `nil` if not found.
     subscript(_ name: String) -> Deployment? {
         return self.deployments.first { $0.name == name }
@@ -239,10 +283,13 @@ extension DependencyGraph: CustomStringConvertible {
     public var description: String {
         """
         graph \(self.namespace) {
-            deployments {\(self.deployments.map(\.description).sorted().joined(separator: ", "))}
-            dependencies {
+            deployments (\(self.deployments.count)) {\(self.deployments.map(\.description).sorted().joined(separator: ", "))}
+            dependencies (\(self.dependencies.count)) {
             \t\(self.dependencies.map(\.description).sorted().joined(separator: "\n\t\t"))
             }
+            maximum depth = \(self.maximumDepth)
+            maximum requirements = \(self.maximumRequirementsCount)
+            maximum requirers = \(self.maximumRequirersCount)
         }
         """
     }
