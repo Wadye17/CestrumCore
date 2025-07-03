@@ -287,9 +287,6 @@ extension DependencyGraph: CustomStringConvertible {
             dependencies (\(self.dependencies.count)) {
             \t\(self.dependencies.map(\.description).sorted().joined(separator: "\n\t\t"))
             }
-            maximum depth = \(self.maximumDepth)
-            maximum requirements = \(self.maximumRequirementsCount)
-            maximum requirers = \(self.maximumRequirersCount)
         }
         """
     }
