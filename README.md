@@ -8,7 +8,7 @@ abstract operations and specifications, concrete operations and plans, as well a
 - Kubernetes with a working cluster—optional for non-applied scenarios or test purposes
 - An IDE such as Visual Studio—optional
 
-# Adding `CestrumCore`to a Swift (Package) Project
+## Adding `CestrumCore`to a Swift (Package) Project
 Add the following dependency to your `Package.swift` file:
 
 ```swift
