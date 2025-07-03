@@ -19,10 +19,14 @@ Add the following dependency to your `Package.swift` file:
 Whilst `CestrumCore` implements the core of the approach, it is not made to be used on application-level as it requires some experience with the
 Swift programming language. For an actual, easier use, please refer to [CestrumCLI](https://github.com/Wadye17/cestrum-cli).
 
+## Import the framework
 ```swift
 import Foundation
 import CestrumCore
+```
 
+## Declaring and modellig deployments and configurations
+```swift
 // Declare deployments
 let persistence = Deployment("persistence")
 let backend = Deployment("backend")
@@ -37,16 +41,22 @@ let graph = try DependencyGraph(name: "my_config", deployments: persistence, fro
     backend --> [persistence, authService] // custom one-to-many operator
     authService --> persistence // one-to-one operator
 }
+```
 
+## Programmatically create an abstract specification
+```swift
 // Declare an abstract specification — programmatically...
 let specification: AbstractFormula = [
     .replace(oldDeploymentName: "backend", newDeployment: Deployment("new-backend")),
     .replace(oldDeploymentName: "auth", newDeployment: Deployment("new-auth"))
 ]
+```
 
-// ...OR
+## Interpret an abstract specification from a CESR script
+```swift
 // Interpret a specification written in CESR
-let script = """
+let script =
+"""
 configuration "doc";
 replace auth with new-auth "path/to/new-auth.yaml";
 replace backend with new-backend "path/to/new-backend.yaml";
@@ -61,8 +71,12 @@ guard case .success(let interpretedContent) = result else {
 }
 
 // Capture the result on success
-let (graphName, specificationFromCode) = interpretedContent
+let (graphName, specification) = interpretedContent
+```
+Interpretation errors are captured by the `CESRInterpreter` in the `error` result in the form of an array (lines and messages).
 
+## Generating and running concrete plans
+```swift
 // Construct target graph from the source graph by applying the specification
 let targetGraph = try specification.createTargetGraph(from: graph)
 
