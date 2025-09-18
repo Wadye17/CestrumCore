@@ -293,8 +293,8 @@ struct GraphTests {
         let persistence = Deployment("persistence")
         let backend = Deployment("backend")
         let frontend = Deployment("frontend")
-        let notificationService = Deployment("notification-service")
-        let authService = Deployment("auth-service")
+        let notificationService = Deployment("notification")
+        let authService = Deployment("auth")
         
         let graph = try DependencyGraph(name: "my_config", deployments: persistence, frontend, backend, notificationService, authService) {
             [frontend, notificationService] --> backend
@@ -304,7 +304,7 @@ struct GraphTests {
         
         let formula: AbstractFormula = [
             .replace(oldDeploymentName: "backend", newDeployment: Deployment("new-backend")),
-            .replace(oldDeploymentName: "persistence", newDeployment: Deployment("new-persistence"))
+            .replace(oldDeploymentName: "auth", newDeployment: Deployment("new-auth"))
         ]
         
         let targetGraph = try formula.createTargetGraph(from: graph)
@@ -312,5 +312,80 @@ struct GraphTests {
         let workflow = ConcreteWorkflow(initialGraph: graph, targetGraph: targetGraph)
         
         print(workflow.dotTranslation)
+    }
+    
+    @Test
+    func testConfluentWorkflow() async throws {
+        let persistence = Deployment("persistence")
+        let backend = Deployment("backend")
+        let frontend = Deployment("frontend")
+        let notificationService = Deployment("notification")
+        let authService = Deployment("auth")
+        
+        let graph = try DependencyGraph(name: "my_config", deployments: persistence, frontend, backend, notificationService, authService) {
+            [frontend, notificationService] --> backend
+            backend --> [persistence, authService]
+            authService --> persistence
+        }
+        
+        let formula: AbstractFormula = [
+            .replace(oldDeploymentName: "backend", newDeployment: Deployment("new-backend")),
+            .replace(oldDeploymentName: "auth", newDeployment: Deployment("new-auth"))
+        ]
+        
+        let (targetGraph, complementaryInfo) = try formula.createTargetGraphWithComplementaryInformation(from: graph)
+        
+        let delta = Delta(sourceGraph: graph, targetGraph: targetGraph, complementaryInformation: complementaryInfo)
+        
+        let confluentPlan = ConfluentPlan(delta: delta)
+        
+        print(confluentPlan.workflow.dotTranslation)
+    }
+    
+    @Test
+    func testComplexConfluentPlan() async throws {
+        let a = Deployment("A"); let b = Deployment("B");
+        let c = Deployment("C"); let d = Deployment("D");
+        let e = Deployment("E"); let f = Deployment("F");
+        let g = Deployment("G"); let h = Deployment("H");
+        let j = Deployment("J"); // let k = Deployment("K");
+        let l = Deployment("L"); let m = Deployment("M");
+        let n = Deployment("N");
+        
+        let graph = try DependencyGraph(name: "my_config", deployments: a, b, c, d, e, f, g, h, j, l, m, n) {
+            [a, b, c, d, e] --> g
+            e --> [b, c]
+            [c, f] --> d
+            f --> c
+            h --> a
+            g --> [l, m]
+            a --> n
+        }
+        
+        let code =
+        """
+        configuration "my_config";
+        replace G with newG "newG.yaml";
+        remove H;
+        bind K to {E, F};
+        replace J with newJ "newJ.yml";
+        add K "k.yaml";
+        """
+        
+        let result = CESRInterpreter.interpret(code: code)
+        
+        guard case .success(let interpretationContent) = result else {
+            print("Interpretation failed")
+            return
+        }
+        
+        let formulaFromCode = interpretationContent.abstractPlan
+        
+        let (targetGraph, complmentaryInfo) = try formulaFromCode.createTargetGraphWithComplementaryInformation(from: graph)
+        
+        let delta = Delta(sourceGraph: graph, targetGraph: targetGraph, complementaryInformation: complmentaryInfo)
+        let confluentPlan = ConfluentPlan(delta: delta)
+        print(confluentPlan.workflow.dotTranslation)
+//        try await workflow.apply(on: graph, forTesting: true)
     }
 }

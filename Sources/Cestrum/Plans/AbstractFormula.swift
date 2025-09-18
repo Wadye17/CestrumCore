@@ -39,6 +39,17 @@ public struct AbstractFormula: OperationCollection, ExpressibleByArrayLiteral {
         return targetGraph
     }
     
+    func createTargetGraphWithComplementaryInformation(from graph: DependencyGraph) throws(RuntimeError) -> (DependencyGraph, Set<ComplementaryInformation>) {
+        let targetGraph = try createTargetGraph(from: graph)
+        var complementaryInformation = Set<ComplementaryInformation>()
+        for line in lines {
+            if case .replace(let oldDeploymentName, let newDeployment) = line {
+                complementaryInformation.insert(.replacement(oldDeployment: oldDeploymentName, newDeployment: newDeployment.name))
+            }
+        }
+        return (targetGraph, complementaryInformation)
+    }
+    
     public var isTransparent: Bool {
         for line in lines {
             guard line.isTransparent else { return false }
