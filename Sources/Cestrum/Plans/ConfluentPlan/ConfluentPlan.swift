@@ -27,7 +27,7 @@ public struct ConfluentPlan {
         let delta = Delta(sourceGraph: graph, targetGraph: targetGraph, complementaryInformation: complementaryInfo)
         let constraintSet = OrderingConstraintSet.confluentSet(from: delta)
         let (nodes, naiveFlows) = delta.extractNodesAndFlows(constraints: constraintSet)
-        let workflow = ConcreteWorkflow(nodes: nodes, naiveFlows: naiveFlows)
+        let workflow = ConcreteWorkflow(nodes: nodes, naiveFlows: naiveFlows, delta: delta)
         workflow.groupBothEnds()
         workflow.wrap()
         self.workflow = workflow

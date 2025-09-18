@@ -22,9 +22,14 @@ public final class ConcreteWorkflow {
         self.targetGraph = targetGraph
     }
     
-    init(nodes: NodeSet, naiveFlows: FlowSet) {
-        self.initialGraph = nil
-        self.targetGraph = nil
+    init(nodes: NodeSet, naiveFlows: FlowSet, delta: Delta? = nil) {
+        if let delta {
+            self.initialGraph = delta.sourceGraph
+            self.targetGraph = delta.targetGraph
+        } else {
+            self.initialGraph = nil
+            self.targetGraph = nil
+        }
         
         self.nodes = NodeSet()
             .union(nodes)
