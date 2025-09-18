@@ -75,8 +75,6 @@ extension Delta {
             .union(self.deploymentsToAdd.map { Node(.task(.add($0, self.targetGraph))) })
             .union(self.deploymentsToStart.map { Node(.task(.start($0, self.targetGraph))) })
         
-        print(nodes)
-        
         var naiveFlows = FlowSet()
         
         for constraint in constraints {
